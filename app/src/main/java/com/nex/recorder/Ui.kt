@@ -1,0 +1,497 @@
+package com.nex.recorder
+
+import android.os.Build
+import android.os.SystemClock
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
+import kotlin.math.roundToInt
+
+private val Red = Color(0xFFE53935)
+
+@Composable
+fun AppTheme(content: @Composable () -> Unit) {
+    val dark = isSystemInDarkTheme()
+    val ctx = LocalContext.current
+    val scheme = when {
+        Build.VERSION.SDK_INT >= 31 ->
+            if (dark) dynamicDarkColorScheme(ctx) else dynamicLightColorScheme(ctx)
+        dark -> darkColorScheme(primary = Color(0xFFFF8A80), background = Color(0xFF121214))
+        else -> lightColorScheme(primary = Red)
+    }
+    MaterialTheme(colorScheme = scheme, content = content)
+}
+
+@Composable
+fun MainScreen(onStart: () -> Unit, onStop: () -> Unit, onFloating: (Boolean) -> Unit) {
+    val ctx = LocalContext.current
+    var s by remember { mutableStateOf(Prefs.load(ctx)) }
+    val startedAt by RecorderState.startedAt.collectAsState()
+    val floating by OverlayState.enabled.collectAsState()
+    val recording = startedAt != 0L
+    var now by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
+
+    LaunchedEffect(recording) {
+        while (recording) {
+            now = SystemClock.elapsedRealtime()
+            delay(500)
+        }
+    }
+
+    fun update(n: RecSettings) {
+        s = n
+        Prefs.save(ctx, n)
+    }
+
+    Scaffold(containerColor = MaterialTheme.colorScheme.background) { pad ->
+        Column(
+            Modifier
+                .padding(pad)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Spacer(Modifier.height(24.dp))
+            Text(
+                "Nex Recorder",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(Modifier.height(36.dp))
+            RecordButton(recording, if (recording) onStop else onStart)
+            Spacer(Modifier.height(16.dp))
+            Text(
+                if (recording) formatTime(now - startedAt) else "Ketuk untuk mulai merekam",
+                style = MaterialTheme.typography.titleLarge,
+                color = if (recording) Red else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(32.dp))
+
+            Card(
+                Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(28.dp),
+                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer),
+            ) {
+                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                    Option(
+                        "Resolusi", listOf("480p" to 480, "720p" to 720, "1080p" to 1080, "Asli" to 0),
+                        s.shortSide, !recording,
+                    ) { update(s.copy(shortSide = it)) }
+                    Option(
+                        "Frame rate",
+                        listOf("30 fps" to 30, "60 fps" to 60, "90 fps" to 90, "120 fps" to 120),
+                        s.fps, !recording,
+                    ) { update(s.copy(fps = it)) }
+                    Option(
+                        "Bitrate",
+                        listOf("4 Mbps" to 4, "8 Mbps" to 8, "12 Mbps" to 12, "16 Mbps" to 16),
+                        s.bitrateMbps, !recording,
+                    ) { update(s.copy(bitrateMbps = it)) }
+                    Option(
+                        "Codec video", listOf("H.264" to 264, "H.265" to 265),
+                        s.codec, !recording,
+                    ) { update(s.copy(codec = it)) }
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            Card(
+                Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(28.dp),
+                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer),
+            ) {
+                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text("Tombol rekam melayang", style = MaterialTheme.typography.bodyLarge)
+                        Switch(floating, onFloating)
+                    }
+                    Text(
+                        "Tombol merah di tengah layar. Ketuk untuk mulai merekam, lalu tombol hilang. " +
+                            "Berhenti lewat tombol di notifikasi. Tombol bisa digeser.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            Card(
+                Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(28.dp),
+                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainer),
+            ) {
+                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text("Rekam audio", style = MaterialTheme.typography.bodyLarge)
+                        Switch(s.audioOn, { update(s.copy(audioOn = it)) }, enabled = !recording)
+                    }
+                    if (s.audioOn) {
+                        StackedOption(
+                            "Sumber suara",
+                            listOf(
+                                "MIC" to SRC_MIC,
+                                "Raw (tanpa terproses)" to SRC_RAW,
+                                "Performa Suara" to SRC_PERF,
+                                "Suara Internal" to SRC_INTERNAL,
+                                "Internal + MIC" to SRC_INTERNAL_MIC,
+                            ),
+                            s.audioSource, !recording,
+                        ) { update(s.copy(audioSource = it)) }
+                        Text(
+                            when (s.audioSource) {
+                                SRC_RAW -> "Raw: mikrofon tanpa terproses (tanpa peredam noise dan penguat otomatis)."
+                                SRC_PERF -> "Performa Suara: mikrofon dengan latensi rendah."
+                                SRC_INTERNAL -> "Suara Internal: merekam suara dari HP (game/media), bukan mikrofon. " +
+                                    "Sebagian aplikasi memblokirnya, dan video disatukan saat berhenti."
+                                SRC_INTERNAL_MIC -> "Internal + MIC: suara game dan mikrofon dicampur. " +
+                                    "Pakai earphone agar suara game tidak terekam dua kali lewat mikrofon."
+                                else -> "MIC: mikrofon standar."
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        if (s.audioSource == SRC_INTERNAL_MIC) {
+                            VolumeSlider("Volume suara game", s.gameVolume, !recording) {
+                                update(s.copy(gameVolume = it))
+                            }
+                            VolumeSlider("Volume mikrofon", s.micVolume, !recording) {
+                                update(s.copy(micVolume = it))
+                            }
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                Text("Mode streamer", style = MaterialTheme.typography.bodyLarge)
+                                Switch(
+                                    s.streamerMode,
+                                    { update(s.copy(streamerMode = it)) },
+                                    enabled = !recording,
+                                )
+                            }
+                            Text(
+                                "Turunkan volume suara game saat Anda sedang berbicara.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Option(
+                                "Filter suara mikrofon",
+                                listOf("Mati" to 0, "Ringan" to 1, "Kuat" to 2),
+                                s.filterLevel, !recording,
+                            ) { update(s.copy(filterLevel = it)) }
+                            Text(
+                                when (s.filterLevel) {
+                                    1 -> "Ringan: peredam noise bawaan HP dan pembuang dengung rendah."
+                                    2 -> "Kuat: Ringan ditambah noise gate, peredam gema bawaan HP, dan pembatas suara pecah. " +
+                                        "Efek bawaan HP tidak tersedia di semua HP."
+                                    else -> "Mati: suara mikrofon apa adanya."
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        if (s.audioSource != SRC_INTERNAL) {
+                            PillGrid(
+                                "Pengubah suara",
+                                listOf(
+                                    "Original" to VOICE_ORIGINAL, "Bayi" to VOICE_BABY, "Wanita" to VOICE_WOMAN,
+                                    "Paman" to VOICE_UNCLE, "Robot" to VOICE_ROBOT, "Orang Tua" to VOICE_OLD,
+                                    "Monster" to VOICE_MONSTER,
+                                ),
+                                s.voiceMode, !recording,
+                            ) { update(s.copy(voiceMode = it)) }
+                            Text(
+                                "Efek diterapkan pada suara mikrofon. Selain Original, video disatukan saat berhenti " +
+                                    "(ada jeda singkat untuk menyimpan).",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Option(
+                            "Tingkat sampel audio",
+                            listOf("44100 Hz" to 44100, "48000 Hz" to 48000),
+                            s.sampleRate, !recording,
+                        ) { update(s.copy(sampleRate = it)) }
+                        Option(
+                            "Saluran audio", listOf("Mono" to 1, "Stereo" to 2),
+                            s.channels, !recording,
+                        ) { update(s.copy(channels = it)) }
+                        Option(
+                            "Enkoder audio",
+                            listOf("AAC" to 0, "AAC_ELD" to 1, "HE-AAC" to 2),
+                            s.audioCodec, !recording,
+                        ) { update(s.copy(audioCodec = it)) }
+                        Option(
+                            "Bit rata-rata audio",
+                            listOf("64 Kbps" to 64, "128 Kbps" to 128, "256 Kbps" to 256, "320 Kbps" to 320),
+                            s.audioBitrate, !recording,
+                        ) { update(s.copy(audioBitrate = it)) }
+                        Text(
+                            "Otomatis diturunkan jika melebihi batas encoder " +
+                                "(misalnya mono tidak mencapai 320 Kbps).",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(32.dp))
+        }
+    }
+}
+
+@Composable
+private fun RecordButton(recording: Boolean, onClick: () -> Unit) {
+    val size by animateDpAsState(if (recording) 44.dp else 96.dp, label = "size")
+    val corner by animateDpAsState(if (recording) 12.dp else 48.dp, label = "corner")
+    Box(
+        Modifier
+            .size(136.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            Modifier
+                .size(size)
+                .clip(RoundedCornerShape(corner))
+                .background(Red),
+        )
+    }
+}
+
+@Composable
+private fun <T> StackedOption(
+    title: String,
+    options: List<Pair<String, T>>,
+    selected: T,
+    enabled: Boolean,
+    onSelect: (T) -> Unit,
+) {
+    Column {
+        Text(
+            title,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(8.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            options.forEach { (label, value) ->
+                val isSelected = value == selected
+                val shape = RoundedCornerShape(50)
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(44.dp)
+                        .alpha(if (enabled) 1f else 0.5f)
+                        .clip(shape)
+                        .background(
+                            if (isSelected) MaterialTheme.colorScheme.secondaryContainer
+                            else Color.Transparent,
+                        )
+                        .border(1.dp, MaterialTheme.colorScheme.outline, shape)
+                        .selectable(
+                            selected = isSelected,
+                            enabled = enabled,
+                            role = Role.RadioButton,
+                            onClick = { onSelect(value) },
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer
+                        else MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun <T> PillGrid(
+    title: String,
+    options: List<Pair<String, T>>,
+    selected: T,
+    enabled: Boolean,
+    onSelect: (T) -> Unit,
+) {
+    Column {
+        Text(
+            title,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(8.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            options.chunked(3).forEach { rowItems ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    rowItems.forEach { (label, value) ->
+                        val isSelected = value == selected
+                        val shape = RoundedCornerShape(50)
+                        Box(
+                            Modifier
+                                .weight(1f)
+                                .height(44.dp)
+                                .alpha(if (enabled) 1f else 0.5f)
+                                .clip(shape)
+                                .background(
+                                    if (isSelected) MaterialTheme.colorScheme.secondaryContainer
+                                    else Color.Transparent,
+                                )
+                                .border(1.dp, MaterialTheme.colorScheme.outline, shape)
+                                .selectable(
+                                    selected = isSelected,
+                                    enabled = enabled,
+                                    role = Role.RadioButton,
+                                    onClick = { onSelect(value) },
+                                ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                label,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.labelLarge,
+                                color = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer
+                                else MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                    }
+                    repeat(3 - rowItems.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun VolumeSlider(label: String, value: Int, enabled: Boolean, onChange: (Int) -> Unit) {
+    Column {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(
+                label,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text("$value%", style = MaterialTheme.typography.labelLarge)
+        }
+        Slider(
+            value = value.toFloat(),
+            onValueChange = { onChange(it.roundToInt()) },
+            valueRange = 0f..200f,
+            steps = 19,
+            enabled = enabled,
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun <T> Option(
+    title: String,
+    options: List<Pair<String, T>>,
+    selected: T,
+    enabled: Boolean,
+    onSelect: (T) -> Unit,
+) {
+    Column {
+        Text(
+            title,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(8.dp))
+        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+            options.forEachIndexed { i, (label, value) ->
+                SegmentedButton(
+                    selected = value == selected,
+                    onClick = { onSelect(value) },
+                    shape = SegmentedButtonDefaults.itemShape(i, options.size),
+                    enabled = enabled,
+                    icon = {},
+                    label = {
+                        Text(
+                            label,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                    },
+                )
+            }
+        }
+    }
+}
+
+private fun formatTime(ms: Long): String {
+    val t = ms / 1000
+    return if (t >= 3600) "%d:%02d:%02d".format(t / 3600, t % 3600 / 60, t % 60)
+    else "%02d:%02d".format(t / 60, t % 60)
+}
