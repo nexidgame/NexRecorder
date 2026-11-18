@@ -15,7 +15,7 @@ Perekam layar minimalis untuk Android 11 (API 30) sampai Android 16 (API 36).
 - UI hanya aktif saat aplikasi dibuka; saat merekam, aplikasi langsung ke latar belakang.
 
 ## Fitur
-Resolusi (480p/720p/1080p/asli), 30/60/90/120 fps, bitrate 4-16 Mbps,
+Resolusi (480p/720p/1080p/asli), 30/60/90/120 fps, bitrate 4-80 Mbps,
 codec H.264 atau H.265 (otomatis kembali ke H.264 jika HP tidak mendukung H.265),
 audio opsional dengan pilihan:
 - Sumber suara: MIC, Raw (tanpa terproses), Performa Suara, Suara Internal, atau Internal + MIC
@@ -31,6 +31,13 @@ audio opsional dengan pilihan:
 - Bit rata-rata audio: 64, 128, 256, atau 320 Kbps (otomatis diturunkan jika melebihi batas encoder)
 Jika kombinasi audio tidak didukung HP, aplikasi otomatis memakai AAC (dan MIC untuk sumber mikrofon).
 Video tersimpan di Movies/NexRecorder lewat MediaStore (tanpa izin penyimpanan).
+
+## Tampilan
+Empat tab di bagian bawah:
+- **Rekam**: tombol rekam, timer, ringkasan pengaturan, dan saklar tombol melayang.
+- **Video**: resolusi, frame rate, bitrate, dan codec.
+- **Audio**: sumber dan volume, efek suara (pengubah suara dan filter), serta kualitas audio.
+- **Pengaturan**: tentang aplikasi dan pengembalian pengaturan awal.
 
 ## Tombol rekam melayang
 Aktifkan saklar "Tombol rekam melayang" di aplikasi (butuh izin "Tampil di atas aplikasi lain").
