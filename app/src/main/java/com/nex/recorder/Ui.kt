@@ -147,7 +147,7 @@ fun MainScreen(onStart: () -> Unit, onStop: () -> Unit, onFloating: (Boolean) ->
                 )
                 Tab.VIDEO -> VideoTab(s, recording) { update(it) }
                 Tab.AUDIO -> AudioTab(s, recording) { update(it) }
-                Tab.PENGATURAN -> SettingsTab(recording) { update(RecSettings()) }
+                Tab.PENGATURAN -> SettingsTab(s, recording, { update(it) }) { update(RecSettings()) }
             }
             Spacer(Modifier.height(32.dp))
         }
@@ -413,7 +413,12 @@ private fun AudioTab(s: RecSettings, recording: Boolean, update: (RecSettings) -
 // ---------------------------------------------------------------- Tab Pengaturan
 
 @Composable
-private fun SettingsTab(recording: Boolean, onReset: () -> Unit) {
+private fun SettingsTab(
+    s: RecSettings,
+    recording: Boolean,
+    update: (RecSettings) -> Unit,
+    onReset: () -> Unit,
+) {
     val ctx = LocalContext.current
     val version = remember {
         try {
@@ -422,6 +427,76 @@ private fun SettingsTab(recording: Boolean, onReset: () -> Unit) {
             "-"
         }
     }
+    SectionCard {
+        SectionTitle("Trigger mode")
+        Text(
+            "Saat merekam, geser dari tepi layar untuk memunculkan tombol hijau. " +
+                "Ketuk tombol hijau untuk menyimpan rekaman. " +
+                "Aktif jika Tombol rekam melayang dinyalakan (tab Rekam).",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        StackedOption(
+            "Mode",
+            listOf(
+                "Icon Click Trigger" to TRIG_CLICK,
+                "Swipe From Side Trigger" to TRIG_SIDE,
+                "Half top swipe Trigger" to TRIG_HALF,
+                "Adjustable swipe Trigger" to TRIG_ADJ,
+            ),
+            s.triggerMode, !recording,
+        ) { m ->
+            val sideOk = m == TRIG_ADJ || (s.triggerSide != SIDE_TOP && s.triggerSide != SIDE_BOTTOM)
+            update(s.copy(triggerMode = m, triggerSide = if (sideOk) s.triggerSide else SIDE_RIGHT))
+        }
+        Text(
+            when (s.triggerMode) {
+                TRIG_SIDE -> "Swipe From Side: geser dari tepi layar (sepanjang sisi)."
+                TRIG_HALF -> "Half top swipe: geser dari tepi layar bagian atas (setengah tinggi layar)."
+                TRIG_ADJ -> "Adjustable swipe: sisi dan area cakupan bisa diatur."
+                else -> "Icon Click: hanya tombol rekam melayang. Berhenti lewat tombol di notifikasi."
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (s.triggerMode != TRIG_CLICK) {
+            StackedOption(
+                "Trigger side",
+                if (s.triggerMode == TRIG_ADJ) {
+                    listOf(
+                        "Right" to SIDE_RIGHT, "Left" to SIDE_LEFT, "Top" to SIDE_TOP,
+                        "Bottom" to SIDE_BOTTOM, "Both Sides" to SIDE_BOTH,
+                    )
+                } else {
+                    listOf("Right" to SIDE_RIGHT, "Left" to SIDE_LEFT, "Both Sides" to SIDE_BOTH)
+                },
+                s.triggerSide, !recording,
+            ) { update(s.copy(triggerSide = it)) }
+            if (s.triggerMode == TRIG_ADJ) {
+                PercentSlider("Area cakupan: mulai", s.covStart, 0, s.covEnd - 10, !recording) {
+                    update(s.copy(covStart = it))
+                }
+                PercentSlider("Area cakupan: selesai", s.covEnd, s.covStart + 10, 100, !recording) {
+                    update(s.copy(covEnd = it))
+                }
+            }
+            StackedOption(
+                "Swipe trigger sensitivity",
+                listOf(
+                    "Least Sensitive" to 0, "Less Sensitive" to 1,
+                    "Default" to 2, "More Sensitive" to 3,
+                ),
+                s.triggerSens, !recording,
+            ) { update(s.copy(triggerSens = it)) }
+            Text(
+                "Naikkan sensitivitas jika tombol hijau sulit muncul. Turunkan jika area geser " +
+                    "mengganggu keyboard atau gerakan lain.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+    Spacer(Modifier.height(16.dp))
     SectionCard(spacing = 8.dp) {
         SectionTitle("Tentang")
         Text("Nex Recorder", style = MaterialTheme.typography.bodyLarge)
@@ -657,6 +732,34 @@ private fun <T> PillGrid(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun PercentSlider(
+    label: String,
+    value: Int,
+    min: Int,
+    max: Int,
+    enabled: Boolean,
+    onChange: (Int) -> Unit,
+) {
+    Column {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(
+                label,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text("$value%", style = MaterialTheme.typography.labelLarge)
+        }
+        Slider(
+            value = value.toFloat(),
+            onValueChange = { onChange(it.roundToInt().coerceIn(min, max)) },
+            valueRange = 0f..100f,
+            steps = 9,
+            enabled = enabled,
+        )
     }
 }
 
