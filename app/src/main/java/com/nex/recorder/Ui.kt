@@ -242,14 +242,6 @@ private fun VideoTab(s: RecSettings, recording: Boolean, update: (RecSettings) -
             ),
             s.bitrateMbps, !recording,
         ) { update(s.copy(bitrateMbps = it)) }
-        if (s.bitrateMbps > 16) {
-            Text(
-                "Bitrate tinggi menghasilkan file besar (24 Mbps sekitar 180 MB per menit, " +
-                    "80 Mbps sekitar 600 MB per menit). Jika HP menolak, otomatis turun ke 16 Mbps.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
         Option(
             "Codec video", listOf("H.264" to 264, "H.265" to 265),
             s.codec, !recording,
