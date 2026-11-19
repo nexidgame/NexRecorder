@@ -9,6 +9,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.graphics.Canvas
@@ -23,6 +24,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.os.SystemClock
 import android.provider.Settings
 import android.view.Gravity
 import android.view.HapticFeedbackConstants
@@ -38,8 +40,10 @@ import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -55,6 +59,9 @@ object OverlayState {
     val busy = MutableStateFlow(false)
 
     @Volatile var launched = false
+
+    /** Waktu (elapsedRealtime) rekaman dihentikan lewat tombol hijau; tombol rekam muncul lagi beberapa detik kemudian. */
+    @Volatile var triggerStopAt = 0L
 }
 
 /** Memulai RecorderService dari activity (dipakai MainActivity dan QuickStartActivity). */
@@ -93,6 +100,8 @@ class OverlayService : Service() {
     private lateinit var lp: WindowManager.LayoutParams
     private var view: View? = null
     private var trashView: TrashView? = null
+    private lateinit var trigger: TriggerController
+    private var showJob: Job? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val handler = Handler(Looper.getMainLooper())
 
@@ -101,9 +110,43 @@ class OverlayService : Service() {
     override fun onCreate() {
         super.onCreate()
         wm = getSystemService(WINDOW_SERVICE) as WindowManager
+        trigger = TriggerController(this, wm) { stopFromTrigger() }
         scope.launch {
-            OverlayState.busy.collect { busy -> if (busy) hide() else show() }
+            OverlayState.busy.collect { busy ->
+                showJob?.cancel()
+                if (busy) {
+                    hide()
+                } else {
+                    // Setelah berhenti lewat tombol hijau, tombol rekam muncul lagi beberapa detik kemudian.
+                    val wait = OverlayState.triggerStopAt + RESHOW_DELAY_MS - SystemClock.elapsedRealtime()
+                    if (wait > 0) {
+                        showJob = launch {
+                            delay(wait)
+                            show()
+                        }
+                    } else {
+                        show()
+                    }
+                }
+            }
         }
+        scope.launch {
+            RecorderState.startedAt.collect { t ->
+                if (t != 0L) trigger.start(Prefs.load(this@OverlayService)) else trigger.stop()
+            }
+        }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        // Layar diputar saat merekam: pasang ulang strip sesuai ukuran baru.
+        if (RecorderState.startedAt.value != 0L) trigger.start(Prefs.load(this))
+    }
+
+    /** Tombol hijau diketuk: hentikan dan simpan rekaman. */
+    private fun stopFromTrigger() {
+        OverlayState.triggerStopAt = SystemClock.elapsedRealtime()
+        startService(Intent(this, RecorderService::class.java).setAction(ACTION_STOP))
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -125,6 +168,7 @@ class OverlayService : Service() {
 
     override fun onDestroy() {
         scope.cancel()
+        trigger.destroy()
         hide()
         super.onDestroy()
     }
@@ -308,6 +352,7 @@ class OverlayService : Service() {
     companion object {
         private const val CHANNEL = "overlay"
         private const val NOTIF_ID = 2
+        private const val RESHOW_DELAY_MS = 2000L
     }
 }
 
