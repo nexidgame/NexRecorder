@@ -227,13 +227,14 @@ class RecorderService : Service() {
                 outPath = v.absolutePath
             }
 
+            var effMbps = mbps
             fun build(w: Int, h: Int): MediaRecorder = try {
-                newRecorder(w, h, fps, mbps, useHevc, micSource, sampleRate, channels, encoder, abr, outPath, fd.fileDescriptor)
+                newRecorder(w, h, fps, effMbps, useHevc, micSource, sampleRate, channels, encoder, abr, outPath, fd.fileDescriptor)
             } catch (e: Exception) {
                 if (micSource == null) throw e
                 Toast.makeText(this, "Pengaturan audio tidak didukung, memakai MIC + AAC", Toast.LENGTH_LONG).show()
                 newRecorder(
-                    w, h, fps, mbps, useHevc, MediaRecorder.AudioSource.MIC, sampleRate, channels,
+                    w, h, fps, effMbps, useHevc, MediaRecorder.AudioSource.MIC, sampleRate, channels,
                     MediaRecorder.AudioEncoder.AAC, abr, outPath, fd.fileDescriptor,
                 )
             }
@@ -241,11 +242,21 @@ class RecorderService : Service() {
             val mr = try {
                 build(vw, vh)
             } catch (e: Exception) {
-                val (aw, ah) = scaled(rawW, rawH, side, 16, 16)
-                if (aw == vw && ah == vh) throw e
-                vw = aw
-                vh = ah
-                build(vw, vh)
+                // Cadangan 1: ukuran kelipatan 16. Cadangan 2: bitrate diturunkan ke 16 Mbps.
+                try {
+                    val (aw, ah) = scaled(rawW, rawH, side, 16, 16)
+                    if (aw == vw && ah == vh) throw e
+                    vw = aw
+                    vh = ah
+                    build(vw, vh)
+                } catch (e2: Exception) {
+                    if (effMbps <= 16) throw e2
+                    effMbps = 16
+                    Toast.makeText(
+                        this, "Bitrate tinggi tidak didukung HP ini, memakai 16 Mbps", Toast.LENGTH_LONG,
+                    ).show()
+                    build(vw, vh)
+                }
             }
             recorder = mr
 
