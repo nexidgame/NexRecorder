@@ -236,9 +236,20 @@ private fun VideoTab(s: RecSettings, recording: Boolean, update: (RecSettings) -
         ) { update(s.copy(fps = it)) }
         Option(
             "Bitrate",
-            listOf("4 Mbps" to 4, "8 Mbps" to 8, "12 Mbps" to 12, "16 Mbps" to 16),
+            listOf(
+                "4 Mbps" to 4, "8 Mbps" to 8, "12 Mbps" to 12, "16 Mbps" to 16,
+                "24 Mbps" to 24, "32 Mbps" to 32, "50 Mbps" to 50, "80 Mbps" to 80,
+            ),
             s.bitrateMbps, !recording,
         ) { update(s.copy(bitrateMbps = it)) }
+        if (s.bitrateMbps > 16) {
+            Text(
+                "Bitrate tinggi menghasilkan file besar (24 Mbps sekitar 180 MB per menit, " +
+                    "80 Mbps sekitar 600 MB per menit). Jika HP menolak, otomatis turun ke 16 Mbps.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         Option(
             "Codec video", listOf("H.264" to 264, "H.265" to 265),
             s.codec, !recording,
@@ -693,23 +704,27 @@ private fun <T> Option(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(8.dp))
-        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-            options.forEachIndexed { i, (label, value) ->
-                SegmentedButton(
-                    selected = value == selected,
-                    onClick = { onSelect(value) },
-                    shape = SegmentedButtonDefaults.itemShape(i, options.size),
-                    enabled = enabled,
-                    icon = {},
-                    label = {
-                        Text(
-                            label,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.labelMedium,
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            options.chunked(4).forEach { rowItems ->
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    rowItems.forEachIndexed { i, (label, value) ->
+                        SegmentedButton(
+                            selected = value == selected,
+                            onClick = { onSelect(value) },
+                            shape = SegmentedButtonDefaults.itemShape(i, rowItems.size),
+                            enabled = enabled,
+                            icon = {},
+                            label = {
+                                Text(
+                                    label,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    style = MaterialTheme.typography.labelMedium,
+                                )
+                            },
                         )
-                    },
-                )
+                    }
+                }
             }
         }
     }
