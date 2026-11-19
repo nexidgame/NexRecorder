@@ -17,6 +17,18 @@ const val VOICE_ROBOT = 4
 const val VOICE_OLD = 5
 const val VOICE_MONSTER = 6
 
+// Trigger mode (seperti Button Savior)
+const val TRIG_CLICK = 0 // Icon Click Trigger: hanya tombol rekam melayang
+const val TRIG_SIDE = 1  // Swipe From Side Trigger
+const val TRIG_HALF = 2  // Half top swipe Trigger
+const val TRIG_ADJ = 3   // Adjustable swipe Trigger
+
+const val SIDE_RIGHT = 0
+const val SIDE_LEFT = 1
+const val SIDE_TOP = 2
+const val SIDE_BOTTOM = 3
+const val SIDE_BOTH = 4
+
 /** shortSide = sisi pendek video dalam piksel (0 = resolusi asli layar). */
 data class RecSettings(
     val shortSide: Int = 720,
@@ -34,6 +46,11 @@ data class RecSettings(
     val filterLevel: Int = 0,    // 0 = mati, 1 = ringan, 2 = kuat (khusus Internal + MIC)
     val streamerMode: Boolean = false, // volume game turun saat bicara (khusus Internal + MIC)
     val voiceMode: Int = VOICE_ORIGINAL,
+    val triggerMode: Int = TRIG_CLICK,
+    val triggerSide: Int = SIDE_RIGHT,
+    val triggerSens: Int = 2,    // 0 least, 1 less, 2 default, 3 more sensitive
+    val covStart: Int = 0,       // area cakupan (persen) untuk Adjustable swipe
+    val covEnd: Int = 100,
 )
 
 object Prefs {
@@ -57,6 +74,11 @@ object Prefs {
             filterLevel = s.getInt("audio_filter", 0),
             streamerMode = s.getBoolean("streamer", false),
             voiceMode = s.getInt("voice", VOICE_ORIGINAL),
+            triggerMode = s.getInt("trig_mode", TRIG_CLICK),
+            triggerSide = s.getInt("trig_side", SIDE_RIGHT),
+            triggerSens = s.getInt("trig_sens", 2),
+            covStart = s.getInt("cov_start", 0),
+            covEnd = s.getInt("cov_end", 100),
         )
     }
 
@@ -83,6 +105,11 @@ object Prefs {
             .putInt("audio_filter", r.filterLevel)
             .putBoolean("streamer", r.streamerMode)
             .putInt("voice", r.voiceMode)
+            .putInt("trig_mode", r.triggerMode)
+            .putInt("trig_side", r.triggerSide)
+            .putInt("trig_sens", r.triggerSens)
+            .putInt("cov_start", r.covStart)
+            .putInt("cov_end", r.covEnd)
             .apply()
     }
 }
