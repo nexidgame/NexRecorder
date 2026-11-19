@@ -41,10 +41,22 @@ Empat tab di bagian bawah:
 
 ## Tombol rekam melayang
 Aktifkan saklar "Tombol rekam melayang" di aplikasi (butuh izin "Tampil di atas aplikasi lain").
-Tombol merah muncul di tengah layar dan bisa digeser. Ketuk untuk mulai merekam; tombol langsung
+Tombol merah muncul di tengah layar dan bisa digeser. Saat digeser, ikon tempat sampah muncul di
+bagian bawah layar; lepaskan tombol di atasnya untuk menghapus (mematikan) tombol melayang, lalu
+aktifkan lagi lewat saklar di tab Rekam. Ketuk untuk mulai merekam; tombol langsung
 hilang sehingga tidak ikut terekam, dan muncul lagi setelah rekaman selesai disimpan.
 Berhenti lewat tombol Berhenti di notifikasi. Android tetap menampilkan dialog izin rekam layar
 setiap kali rekaman dimulai.
+
+## Trigger mode
+Di tab Pengaturan, pilih cara memunculkan tombol hijau saat merekam (aktif jika tombol rekam melayang
+dinyalakan). Geser dari tepi layar, lalu ketuk tombol hijau untuk menyimpan rekaman. Tombol hijau hilang
+sendiri setelah beberapa detik jika tidak diketuk, dan tombol rekam muncul lagi setelah rekaman tersimpan.
+- Icon Click Trigger: hanya tombol rekam melayang (berhenti lewat notifikasi).
+- Swipe From Side Trigger: geser dari tepi layar (kanan, kiri, atau kedua sisi).
+- Half top swipe Trigger: geser dari tepi layar bagian atas (setengah tinggi layar).
+- Adjustable swipe Trigger: sisi kanan, kiri, atas, bawah, atau kedua sisi, dengan area cakupan yang bisa diatur.
+- Swipe trigger sensitivity: Least, Less, Default, atau More Sensitive.
 
 ## Catatan Android 14-16
 Foreground service bertipe mediaProjection dimulai sebelum getMediaProjection(),
