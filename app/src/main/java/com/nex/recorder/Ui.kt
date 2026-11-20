@@ -1,5 +1,6 @@
 package com.nex.recorder
 
+import android.content.Intent
 import android.os.Build
 import android.os.SystemClock
 import androidx.compose.foundation.Canvas
@@ -105,6 +106,8 @@ fun MainScreen(onStart: () -> Unit, onStop: () -> Unit, onFloating: (Boolean) ->
     val recording = startedAt != 0L
     var now by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
     var tab by rememberSaveable { mutableIntStateOf(0) }
+    val resumeTick by UiSignals.resumeTick.collectAsState()
+    LaunchedEffect(resumeTick) { s = Prefs.load(ctx) }
 
     LaunchedEffect(recording) {
         while (recording) {
@@ -473,11 +476,17 @@ private fun SettingsTab(
                 s.triggerSide, !recording,
             ) { update(s.copy(triggerSide = it)) }
             if (s.triggerMode == TRIG_ADJ) {
-                PercentSlider("Area cakupan: mulai", s.covStart, 0, s.covEnd - 10, !recording) {
-                    update(s.copy(covStart = it))
-                }
-                PercentSlider("Area cakupan: selesai", s.covEnd, s.covStart + 10, 100, !recording) {
-                    update(s.copy(covEnd = it))
+                Text(
+                    "Area cakupan: ${s.covStart}% sampai ${s.covEnd}% dari panjang sisi layar.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedButton(
+                    onClick = { ctx.startActivity(Intent(ctx, CoverageActivity::class.java)) },
+                    enabled = !recording,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Atur area cakupan")
                 }
             }
             StackedOption(
@@ -732,34 +741,6 @@ private fun <T> PillGrid(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun PercentSlider(
-    label: String,
-    value: Int,
-    min: Int,
-    max: Int,
-    enabled: Boolean,
-    onChange: (Int) -> Unit,
-) {
-    Column {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(
-                label,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text("$value%", style = MaterialTheme.typography.labelLarge)
-        }
-        Slider(
-            value = value.toFloat(),
-            onValueChange = { onChange(it.roundToInt().coerceIn(min, max)) },
-            valueRange = 0f..100f,
-            steps = 9,
-            enabled = enabled,
-        )
     }
 }
 
