@@ -431,7 +431,7 @@ private fun SettingsTab(
         }
     }
     SectionCard {
-        SectionTitle("Trigger mode")
+        SectionTitle("Mode trigger")
         Text(
             "Saat merekam, geser dari tepi layar untuk memunculkan tombol hijau. " +
                 "Ketuk tombol hijau untuk menyimpan rekaman. " +
@@ -442,10 +442,10 @@ private fun SettingsTab(
         StackedOption(
             "Mode",
             listOf(
-                "Icon Click Trigger" to TRIG_CLICK,
-                "Swipe From Side Trigger" to TRIG_SIDE,
-                "Half top swipe Trigger" to TRIG_HALF,
-                "Adjustable swipe Trigger" to TRIG_ADJ,
+                "Klik Ikon" to TRIG_CLICK,
+                "Geser dari Sisi" to TRIG_SIDE,
+                "Geser Setengah Atas" to TRIG_HALF,
+                "Geser Dapat Diatur" to TRIG_ADJ,
             ),
             s.triggerMode, !recording,
         ) { m ->
@@ -454,24 +454,24 @@ private fun SettingsTab(
         }
         Text(
             when (s.triggerMode) {
-                TRIG_SIDE -> "Swipe From Side: geser dari tepi layar (sepanjang sisi)."
-                TRIG_HALF -> "Half top swipe: geser dari tepi layar bagian atas (setengah tinggi layar)."
-                TRIG_ADJ -> "Adjustable swipe: sisi dan area cakupan bisa diatur."
-                else -> "Icon Click: hanya tombol rekam melayang. Berhenti lewat tombol di notifikasi."
+                TRIG_SIDE -> "Geser dari Sisi: geser dari tepi layar (sepanjang sisi)."
+                TRIG_HALF -> "Geser Setengah Atas: geser dari tepi layar bagian atas (setengah tinggi layar)."
+                TRIG_ADJ -> "Geser Dapat Diatur: sisi dan area cakupan bisa diatur."
+                else -> "Klik Ikon: hanya tombol rekam melayang. Berhenti lewat tombol di notifikasi."
             },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (s.triggerMode != TRIG_CLICK) {
             StackedOption(
-                "Trigger side",
+                "Sisi trigger",
                 if (s.triggerMode == TRIG_ADJ) {
                     listOf(
-                        "Right" to SIDE_RIGHT, "Left" to SIDE_LEFT, "Top" to SIDE_TOP,
-                        "Bottom" to SIDE_BOTTOM, "Both Sides" to SIDE_BOTH,
+                        "Kanan" to SIDE_RIGHT, "Kiri" to SIDE_LEFT, "Atas" to SIDE_TOP,
+                        "Bawah" to SIDE_BOTTOM, "Kedua Sisi" to SIDE_BOTH,
                     )
                 } else {
-                    listOf("Right" to SIDE_RIGHT, "Left" to SIDE_LEFT, "Both Sides" to SIDE_BOTH)
+                    listOf("Kanan" to SIDE_RIGHT, "Kiri" to SIDE_LEFT, "Kedua Sisi" to SIDE_BOTH)
                 },
                 s.triggerSide, !recording,
             ) { update(s.copy(triggerSide = it)) }
@@ -490,10 +490,10 @@ private fun SettingsTab(
                 }
             }
             StackedOption(
-                "Swipe trigger sensitivity",
+                "Sensitivitas geser",
                 listOf(
-                    "Least Sensitive" to 0, "Less Sensitive" to 1,
-                    "Default" to 2, "More Sensitive" to 3,
+                    "Paling Tidak Sensitif" to 0, "Kurang Sensitif" to 1,
+                    "Bawaan" to 2, "Lebih Sensitif" to 3,
                 ),
                 s.triggerSens, !recording,
             ) { update(s.copy(triggerSens = it)) }
