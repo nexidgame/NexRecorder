@@ -55,7 +55,8 @@ sendiri setelah beberapa detik jika tidak diketuk, dan tombol rekam muncul lagi 
 - Icon Click Trigger: hanya tombol rekam melayang (berhenti lewat notifikasi).
 - Swipe From Side Trigger: geser dari tepi layar (kanan, kiri, atau kedua sisi).
 - Half top swipe Trigger: geser dari tepi layar bagian atas (setengah tinggi layar).
-- Adjustable swipe Trigger: sisi kanan, kiri, atas, bawah, atau kedua sisi, dengan area cakupan yang bisa diatur.
+- Adjustable swipe Trigger: sisi kanan, kiri, atas, bawah, atau kedua sisi. Area cakupan diatur lewat
+  editor layar penuh: seret dua pegangan di tepi layar, lalu Simpan.
 - Swipe trigger sensitivity: Least, Less, Default, atau More Sensitive.
 
 ## Catatan Android 14-16
