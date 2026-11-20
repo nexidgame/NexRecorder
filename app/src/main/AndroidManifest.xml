@@ -35,6 +35,12 @@
             android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
+        <!-- Editor area cakupan geser (layar penuh) -->
+        <activity
+            android:name=".CoverageActivity"
+            android:exported="false"
+            android:theme="@style/Theme.NexRecorder" />
+
         <service
             android:name=".RecorderService"
             android:exported="false"
