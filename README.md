@@ -52,12 +52,12 @@ setiap kali rekaman dimulai.
 Di tab Pengaturan, pilih cara memunculkan tombol hijau saat merekam (aktif jika tombol rekam melayang
 dinyalakan). Geser dari tepi layar, lalu ketuk tombol hijau untuk menyimpan rekaman. Tombol hijau hilang
 sendiri setelah beberapa detik jika tidak diketuk, dan tombol rekam muncul lagi setelah rekaman tersimpan.
-- Icon Click Trigger: hanya tombol rekam melayang (berhenti lewat notifikasi).
-- Swipe From Side Trigger: geser dari tepi layar (kanan, kiri, atau kedua sisi).
-- Half top swipe Trigger: geser dari tepi layar bagian atas (setengah tinggi layar).
-- Adjustable swipe Trigger: sisi kanan, kiri, atas, bawah, atau kedua sisi. Area cakupan diatur lewat
+- Klik Ikon: hanya tombol rekam melayang (berhenti lewat notifikasi).
+- Geser dari Sisi: geser dari tepi layar (kanan, kiri, atau kedua sisi).
+- Geser Setengah Atas: geser dari tepi layar bagian atas (setengah tinggi layar).
+- Geser Dapat Diatur: sisi kanan, kiri, atas, bawah, atau kedua sisi. Area cakupan diatur lewat
   editor layar penuh: seret dua pegangan di tepi layar, lalu Simpan.
-- Swipe trigger sensitivity: Least, Less, Default, atau More Sensitive.
+- Sensitivitas geser: Paling Tidak Sensitif, Kurang Sensitif, Bawaan, atau Lebih Sensitif.
 
 ## Catatan Android 14-16
 Foreground service bertipe mediaProjection dimulai sebelum getMediaProjection(),
