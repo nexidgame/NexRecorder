@@ -118,3 +118,8 @@ object Prefs {
 object RecorderState {
     val startedAt = MutableStateFlow(0L)
 }
+
+/** Dinaikkan setiap MainActivity kembali aktif, supaya layar memuat ulang pengaturan dari penyimpanan. */
+object UiSignals {
+    val resumeTick = MutableStateFlow(0)
+}
