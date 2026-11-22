@@ -35,18 +35,39 @@ class MainActivity : ComponentActivity() {
             if (Settings.canDrawOverlays(this)) setFloating(true)
         }
 
+    // Alur facecam: izin "tampil di atas aplikasi lain" lalu izin kamera, baru kamera dinyalakan.
+    private val facecamOverlayLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            if (Settings.canDrawOverlays(this)) ensureCameraThenStart()
+        }
+
+    private val cameraPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+            if (ok) startFacecam()
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         // Pulihkan tombol melayang jika sebelumnya diaktifkan dan izinnya masih ada.
         if (Prefs.floating(this) && Settings.canDrawOverlays(this)) setFloating(true)
         else OverlayState.enabled.value = false
+        // Pulihkan facecam jika sebelumnya aktif dan semua izinnya masih ada.
+        CamPrefs.syncState(this)
+        if (CamPrefs.enabled(this) && Settings.canDrawOverlays(this) &&
+            granted(Manifest.permission.CAMERA)
+        ) {
+            startFacecam()
+        } else {
+            FaceCamState.enabled.value = false
+        }
         setContent {
             AppTheme {
                 MainScreen(
                     onStart = ::onStartClicked,
                     onStop = ::onStopClicked,
                     onFloating = ::onFloatingChanged,
+                    onFacecam = ::onFacecamChanged,
                 )
             }
         }
@@ -99,5 +120,34 @@ class MainActivity : ComponentActivity() {
         OverlayState.enabled.value = on
         val svc = Intent(this, OverlayService::class.java)
         if (on) ContextCompat.startForegroundService(this, svc) else stopService(svc)
+    }
+
+    private fun onFacecamChanged(on: Boolean) {
+        if (!on) {
+            stopFacecam()
+        } else if (!Settings.canDrawOverlays(this)) {
+            facecamOverlayLauncher.launch(
+                Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")),
+            )
+        } else {
+            ensureCameraThenStart()
+        }
+    }
+
+    private fun ensureCameraThenStart() {
+        if (granted(Manifest.permission.CAMERA)) startFacecam()
+        else cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+    }
+
+    private fun startFacecam() {
+        CamPrefs.setEnabled(this, true)
+        FaceCamState.enabled.value = true
+        ContextCompat.startForegroundService(this, Intent(this, FaceCamService::class.java))
+    }
+
+    private fun stopFacecam() {
+        CamPrefs.setEnabled(this, false)
+        FaceCamState.enabled.value = false
+        stopService(Intent(this, FaceCamService::class.java))
     }
 }
