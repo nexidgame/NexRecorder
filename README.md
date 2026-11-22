@@ -48,6 +48,20 @@ hilang sehingga tidak ikut terekam, dan muncul lagi setelah rekaman selesai disi
 Berhenti lewat tombol Berhenti di notifikasi. Android tetap menampilkan dialog izin rekam layar
 setiap kali rekaman dimulai.
 
+## Preset video
+Di tab Video, satu ketukan mengatur resolusi, frame rate, bitrate, dan codec:
+- Hemat: 720p, 30 fps, 4 Mbps, H.264.
+- Standar: 720p, 30 fps, 8 Mbps, H.264 (pengaturan awal).
+- Halus: 720p, 60 fps, 12 Mbps, H.264.
+- Kualitas: 1080p, 60 fps, 16 Mbps, H.264.
+Jika pengaturan diubah manual, tampil sebagai Kustom.
+
+## Kamera (facecam)
+Nyalakan saklar "Kamera (facecam)" di tab Rekam (butuh izin kamera dan "Tampil di atas aplikasi lain").
+Kamera depan tampil di kiri atas layar dan ikut terekam. Geser untuk memindahkan. Ketuk kamera untuk
+menampilkan tombol: pengaturan (bentuk segi empat atau lingkaran, efek Bright/Warm/Dark), tutup,
+balik kamera depan/belakang, dan ubah ukuran (seret).
+
 ## Trigger mode
 Di tab Pengaturan, pilih cara memunculkan tombol hijau saat merekam (aktif jika tombol rekam melayang
 dinyalakan). Geser dari tepi layar, lalu ketuk tombol hijau untuk menyimpan rekaman. Tombol hijau hilang
