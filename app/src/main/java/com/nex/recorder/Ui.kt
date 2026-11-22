@@ -98,11 +98,17 @@ private enum class Tab(val label: String) {
 }
 
 @Composable
-fun MainScreen(onStart: () -> Unit, onStop: () -> Unit, onFloating: (Boolean) -> Unit) {
+fun MainScreen(
+    onStart: () -> Unit,
+    onStop: () -> Unit,
+    onFloating: (Boolean) -> Unit,
+    onFacecam: (Boolean) -> Unit,
+) {
     val ctx = LocalContext.current
     var s by remember { mutableStateOf(Prefs.load(ctx)) }
     val startedAt by RecorderState.startedAt.collectAsState()
     val floating by OverlayState.enabled.collectAsState()
+    val facecam by FaceCamState.enabled.collectAsState()
     val recording = startedAt != 0L
     var now by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
     var tab by rememberSaveable { mutableIntStateOf(0) }
@@ -146,7 +152,7 @@ fun MainScreen(onStart: () -> Unit, onStop: () -> Unit, onFloating: (Boolean) ->
             Spacer(Modifier.height(24.dp))
             when (Tab.entries[tab]) {
                 Tab.REKAM -> RecordTab(
-                    s, recording, startedAt, now, floating, onStart, onStop, onFloating,
+                    s, recording, startedAt, now, floating, onStart, onStop, onFloating, facecam, onFacecam,
                 )
                 Tab.VIDEO -> VideoTab(s, recording) { update(it) }
                 Tab.AUDIO -> AudioTab(s, recording) { update(it) }
@@ -169,6 +175,8 @@ private fun RecordTab(
     onStart: () -> Unit,
     onStop: () -> Unit,
     onFloating: (Boolean) -> Unit,
+    facecam: Boolean,
+    onFacecam: (Boolean) -> Unit,
 ) {
     Text(
         "Nex Recorder",
@@ -208,6 +216,24 @@ private fun RecordTab(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
+    Spacer(Modifier.height(16.dp))
+    SectionCard(spacing = 8.dp) {
+        Row(
+            Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text("Kamera (facecam)", style = MaterialTheme.typography.bodyLarge)
+            Switch(facecam, onFacecam)
+        }
+        Text(
+            "Menampilkan kamera depan di layar (bawaan di kiri atas) yang ikut terekam. " +
+                "Geser untuk memindahkan. Ketuk kamera untuk menampilkan tombol pengaturan, " +
+                "tutup, balik kamera, dan ubah ukuran.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
 
 private fun summary(s: RecSettings): String {
@@ -225,10 +251,46 @@ private fun summary(s: RecSettings): String {
 
 // ---------------------------------------------------------------- Tab Video
 
+/** Preset video: satu ketukan mengatur resolusi, frame rate, bitrate, dan codec. */
+private data class VideoPreset(
+    val label: String,
+    val side: Int,
+    val fps: Int,
+    val mbps: Int,
+    val codec: Int,
+    val note: String,
+)
+
+private val VIDEO_PRESETS = listOf(
+    VideoPreset("Hemat", 720, 30, 4, 264, "Hemat: 720p, 30 fps, 4 Mbps, H.264. Paling ringan untuk game dan ukuran file kecil."),
+    VideoPreset("Standar", 720, 30, 8, 264, "Standar: 720p, 30 fps, 8 Mbps, H.264. Pengaturan awal aplikasi."),
+    VideoPreset("Halus", 720, 60, 12, 264, "Halus: 720p, 60 fps, 12 Mbps, H.264. Gerakan lebih mulus untuk game cepat."),
+    VideoPreset("Kualitas", 1080, 60, 16, 264, "Kualitas: 1080p, 60 fps, 16 Mbps, H.264. Gambar paling tajam, file lebih besar."),
+)
+
+private fun presetIndex(s: RecSettings): Int = VIDEO_PRESETS.indexOfFirst {
+    it.side == s.shortSide && it.fps == s.fps && it.mbps == s.bitrateMbps && it.codec == s.codec
+}
+
 @Composable
 private fun VideoTab(s: RecSettings, recording: Boolean, update: (RecSettings) -> Unit) {
     SectionCard {
         SectionTitle("Video")
+        val preset = presetIndex(s)
+        PillGrid(
+            "Preset",
+            VIDEO_PRESETS.mapIndexed { i, p -> p.label to i },
+            preset, !recording,
+        ) { i ->
+            val p = VIDEO_PRESETS[i]
+            update(s.copy(shortSide = p.side, fps = p.fps, bitrateMbps = p.mbps, codec = p.codec))
+        }
+        Text(
+            if (preset >= 0) VIDEO_PRESETS[preset].note
+            else "Kustom: pengaturan video diubah manual. Pilih preset untuk mengembalikan.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         Option(
             "Resolusi", listOf("480p" to 480, "720p" to 720, "1080p" to 1080, "Asli" to 0),
             s.shortSide, !recording,
