@@ -1,12 +1,10 @@
 package com.nex.recorder
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -16,39 +14,35 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
-import android.graphics.Matrix
 import android.graphics.Outline
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PixelFormat
 import android.graphics.RectF
-import android.graphics.SurfaceTexture
-import android.hardware.camera2.CameraCaptureSession
-import android.hardware.camera2.CameraCharacteristics
-import android.hardware.camera2.CameraDevice
-import android.hardware.camera2.CameraManager
-import android.hardware.camera2.CaptureRequest
-import android.hardware.display.DisplayManager
 import android.os.Handler
-import android.os.HandlerThread
 import android.os.IBinder
 import android.os.Looper
 import android.provider.Settings
 import android.util.Size
-import android.view.Display
 import android.view.Gravity
 import android.view.MotionEvent
-import android.view.Surface
-import android.view.TextureView
 import android.view.View
 import android.view.ViewConfiguration
 import android.view.ViewOutlineProvider
 import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.Toast
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.Preview
+import androidx.camera.core.resolutionselector.AspectRatioStrategy
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.LifecycleService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -69,6 +63,9 @@ const val CAM_FX_BRIGHT = 1
 const val CAM_FX_WARM = 2
 const val CAM_FX_DARK = 3
 const val ACTION_FACECAM_OFF = "com.nex.recorder.FACECAM_OFF"
+
+/** Ukuran maksimum facecam: sekitar 75% sisi pendek layar (seperti XRecorder). */
+private const val CAM_MAX_FRACTION = 0.75f
 
 /** Status facecam yang dibaca UI dan service. */
 object FaceCamState {
@@ -117,8 +114,11 @@ object CamPrefs {
  * Facecam: pratinjau kamera melayang (bawaan di kiri atas), bisa digeser.
  * Ketuk kamera untuk menampilkan tombol: pengaturan, tutup, balik kamera, dan ubah ukuran.
  * Pratinjau berada di atas layar sehingga ikut terekam.
+ *
+ * Kamera memakai CameraX (PreviewView) sehingga arah gambar otomatis mengikuti arah HP
+ * (portrait, landscape, terbalik) dan kamera depan dicerminkan seperti selfie.
  */
-class FaceCamService : Service() {
+class FaceCamService : LifecycleService() {
 
     private lateinit var wm: WindowManager
     private lateinit var lp: WindowManager.LayoutParams
@@ -127,21 +127,15 @@ class FaceCamService : Service() {
     private val density by lazy { resources.displayMetrics.density }
 
     private var box: FrameLayout? = null
-    private var texture: TextureView? = null
+    private var preview: PreviewView? = null
     private var controls: List<ControlButton> = emptyList()
+    private var cameraProvider: ProcessCameraProvider? = null
     private var sizePx = 0
     private var front = true
     private var controlsVisible = false
     private val hideControlsRunnable = Runnable { showControls(false) }
 
-    private var camThread: HandlerThread? = null
-    private var camHandler: Handler? = null
-    private var camera: CameraDevice? = null
-    private var session: CameraCaptureSession? = null
-    private var previewSize: Size? = null
-    private var sensorOrientation = 90
-
-    override fun onBind(intent: Intent?): IBinder? = null
+    override fun onBind(intent: Intent): IBinder? = super.onBind(intent)
 
     private fun dp(v: Int) = (v * density).roundToInt()
 
@@ -153,6 +147,7 @@ class FaceCamService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId)
         if (intent?.action == ACTION_FACECAM_OFF) {
             turnOff()
             return START_NOT_STICKY
@@ -179,19 +174,19 @@ class FaceCamService : Service() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        // Layar diputar: sesuaikan posisi dan arah pratinjau.
+        // Layar diputar: sesuaikan posisi. Arah gambar kamera diurus otomatis oleh CameraX.
         handler.post {
             if (box == null) return@post
             clampToScreen()
             updateWindow()
-            fitPreview()
         }
     }
 
     override fun onDestroy() {
         scope.cancel()
         handler.removeCallbacksAndMessages(null)
-        closeCamera()
+        try { cameraProvider?.unbindAll() } catch (e: Exception) { }
+        cameraProvider = null
         box?.let { try { wm.removeView(it) } catch (e: Exception) { } }
         box = null
         super.onDestroy()
@@ -208,21 +203,15 @@ class FaceCamService : Service() {
 
     private fun buildWindow() {
         front = CamPrefs.front(this)
-        sizePx = dp(CamPrefs.sizeDp(this))
+        sizePx = min(dp(CamPrefs.sizeDp(this)), maxSizePx())
 
         val b = FrameLayout(this)
-        val tv = TextureView(this)
-        tv.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
-            override fun onSurfaceTextureAvailable(s: SurfaceTexture, w: Int, h: Int) = openCamera()
-            override fun onSurfaceTextureSizeChanged(s: SurfaceTexture, w: Int, h: Int) {}
-            override fun onSurfaceTextureDestroyed(s: SurfaceTexture): Boolean {
-                closeCamera()
-                return true
-            }
-            override fun onSurfaceTextureUpdated(s: SurfaceTexture) {}
+        val pv = PreviewView(this).apply {
+            implementationMode = PreviewView.ImplementationMode.COMPATIBLE // perlu agar bisa dipotong bulat
+            scaleType = PreviewView.ScaleType.FILL_CENTER
         }
-        b.addView(tv, FrameLayout.LayoutParams(sizePx, sizePx, Gravity.CENTER))
-        texture = tv
+        b.addView(pv, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+        preview = pv
 
         val kinds = listOf(KIND_SETTINGS, KIND_CLOSE, KIND_FLIP, KIND_RESIZE)
         controls = kinds.map { k ->
@@ -245,7 +234,8 @@ class FaceCamService : Service() {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED, // wajib untuk pratinjau kamera
             PixelFormat.TRANSLUCENT,
         )
         p.gravity = Gravity.TOP or Gravity.LEFT
@@ -263,10 +253,17 @@ class FaceCamService : Service() {
             wm.addView(b, lp)
         } catch (e: Exception) {
             turnOff()
+            return
         }
+        bindCamera()
     }
 
     private fun screenBounds() = wm.maximumWindowMetrics.bounds
+
+    private fun maxSizePx(): Int {
+        val b = screenBounds()
+        return (min(b.width(), b.height()) * CAM_MAX_FRACTION).roundToInt()
+    }
 
     private fun clampToScreen() {
         val b = screenBounds()
@@ -306,7 +303,7 @@ class FaceCamService : Service() {
     }
 
     private fun applyEffect(fx: Int) {
-        val tv = texture ?: return
+        val pv = preview ?: return
         val m = when (fx) {
             CAM_FX_BRIGHT -> ColorMatrix(
                 floatArrayOf(
@@ -328,9 +325,11 @@ class FaceCamService : Service() {
             )
             else -> null
         }
-        tv.setLayerPaint(
-            if (m == null) null else Paint().apply { colorFilter = ColorMatrixColorFilter(m) },
-        )
+        if (m == null) {
+            pv.setLayerType(View.LAYER_TYPE_NONE, null)
+        } else {
+            pv.setLayerType(View.LAYER_TYPE_HARDWARE, Paint().apply { colorFilter = ColorMatrixColorFilter(m) })
+        }
     }
 
     // ------------------------------------------------------------ geser & kontrol
@@ -402,15 +401,12 @@ class FaceCamService : Service() {
     }
 
     private fun resizeTo(px: Int) {
-        val b = screenBounds()
-        val maxPx = (min(b.width(), b.height()) * 0.6f).roundToInt()
-        sizePx = px.coerceIn(dp(80), maxPx)
+        sizePx = px.coerceIn(dp(80), maxSizePx())
         lp.width = sizePx
         lp.height = sizePx
         clampToScreen()
         updateWindow()
         layoutControls()
-        fitPreview()
     }
 
     private fun showControls(show: Boolean) {
@@ -435,145 +431,43 @@ class FaceCamService : Service() {
     private fun flipCamera() {
         front = !front
         CamPrefs.setFront(this, front)
-        closeCamera()
-        openCamera()
+        bindCamera()
         scheduleHideControls()
     }
 
     // ------------------------------------------------------------------ kamera
 
-    private fun displayRotation(): Int {
-        val dm = getSystemService(DisplayManager::class.java)
-        return dm.getDisplay(Display.DEFAULT_DISPLAY)?.rotation ?: Surface.ROTATION_0
-    }
-
-    @SuppressLint("MissingPermission")
-    private fun openCamera() {
-        if (camera != null) return
-        try {
-            val cm = getSystemService(CameraManager::class.java)
-            val facing = if (front) CameraCharacteristics.LENS_FACING_FRONT
-            else CameraCharacteristics.LENS_FACING_BACK
-            val id = cm.cameraIdList.firstOrNull {
-                cm.getCameraCharacteristics(it).get(CameraCharacteristics.LENS_FACING) == facing
-            } ?: cm.cameraIdList.firstOrNull() ?: return
-            val chars = cm.getCameraCharacteristics(id)
-            sensorOrientation = chars.get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 90
-            val sizes = chars.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
-                ?.getOutputSizes(SurfaceTexture::class.java) ?: return
-            // Pratinjau kecil sudah cukup untuk facecam dan lebih hemat daya.
-            previewSize = sizes.filter { it.width <= 960 && it.height <= 720 }
-                .maxByOrNull { it.width * it.height }
-                ?: sizes.minByOrNull { it.width * it.height }
-            handler.post { fitPreview() }
-
-            val t = HandlerThread("facecam").also { it.start() }
-            camThread = t
-            camHandler = Handler(t.looper)
-            cm.openCamera(
-                id,
-                object : CameraDevice.StateCallback() {
-                    override fun onOpened(c: CameraDevice) {
-                        camera = c
-                        startPreview()
-                    }
-
-                    override fun onDisconnected(c: CameraDevice) {
-                        c.close()
-                        camera = null
-                    }
-
-                    override fun onError(c: CameraDevice, error: Int) {
-                        c.close()
-                        camera = null
-                        handler.post {
-                            Toast.makeText(
-                                this@FaceCamService, "Kamera tidak dapat dibuka", Toast.LENGTH_SHORT,
-                            ).show()
-                        }
-                    }
-                },
-                camHandler,
-            )
-        } catch (e: Exception) {
-            handler.post {
-                Toast.makeText(this, "Kamera tidak dapat dibuka", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    @Suppress("DEPRECATION")
-    private fun startPreview() {
-        val cam = camera ?: return
-        val st = texture?.surfaceTexture ?: return
-        val ps = previewSize ?: return
-        try {
-            st.setDefaultBufferSize(ps.width, ps.height)
-            val surface = Surface(st)
-            val req = cam.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW).apply {
-                addTarget(surface)
-                set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
-            }
-            cam.createCaptureSession(
-                listOf(surface),
-                object : CameraCaptureSession.StateCallback() {
-                    override fun onConfigured(s: CameraCaptureSession) {
-                        if (camera == null) return
-                        session = s
-                        try {
-                            s.setRepeatingRequest(req.build(), null, camHandler)
-                        } catch (e: Exception) { }
-                    }
-
-                    override fun onConfigureFailed(s: CameraCaptureSession) {}
-                },
-                camHandler,
-            )
-        } catch (e: Exception) { }
-    }
-
-    private fun closeCamera() {
-        try { session?.close() } catch (e: Exception) { }
-        session = null
-        try { camera?.close() } catch (e: Exception) { }
-        camera = null
-        camThread?.quitSafely()
-        camThread = null
-        camHandler = null
-    }
-
-    /** Mengisi kotak facecam dengan pratinjau (potong tengah) dan memutar sesuai orientasi layar. */
-    private fun fitPreview() {
-        val tv = texture ?: return
-        val ps = previewSize ?: return
-        val rot = displayRotation()
-        val swap = when (rot) {
-            Surface.ROTATION_0, Surface.ROTATION_180 -> sensorOrientation == 90 || sensorOrientation == 270
-            else -> sensorOrientation == 0 || sensorOrientation == 180
-        }
-        val cw = if (swap) ps.height else ps.width
-        val ch = if (swap) ps.width else ps.height
-        val scale = max(sizePx.toFloat() / cw, sizePx.toFloat() / ch)
-        val w = (cw * scale).roundToInt()
-        val h = (ch * scale).roundToInt()
-        tv.layoutParams = FrameLayout.LayoutParams(w, h, Gravity.CENTER)
-        tv.scaleX = if (front) -1f else 1f // kamera depan dicerminkan seperti selfie
-
-        val m = Matrix()
-        val viewRect = RectF(0f, 0f, w.toFloat(), h.toFloat())
-        val cx = viewRect.centerX()
-        val cy = viewRect.centerY()
-        if (rot == Surface.ROTATION_90 || rot == Surface.ROTATION_270) {
-            val bufferRect = RectF(0f, 0f, ps.height.toFloat(), ps.width.toFloat())
-            bufferRect.offset(cx - bufferRect.centerX(), cy - bufferRect.centerY())
-            m.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL)
-            val sc = max(h.toFloat() / ps.height, w.toFloat() / ps.width)
-            m.postScale(sc, sc, cx, cy)
-            m.postRotate(90f * (rot - 2), cx, cy)
-        } else if (rot == Surface.ROTATION_180) {
-            m.postRotate(180f, cx, cy)
-        }
-        tv.setTransform(m)
+    /** Menghubungkan pratinjau kamera (CameraX) ke jendela; dipanggil ulang saat kamera dibalik. */
+    private fun bindCamera() {
+        val pv = preview ?: return
+        val future = ProcessCameraProvider.getInstance(this)
+        future.addListener(
+            {
+                try {
+                    val provider = future.get()
+                    cameraProvider = provider
+                    // Pratinjau kecil sudah cukup untuk facecam dan lebih hemat daya.
+                    val selector = ResolutionSelector.Builder()
+                        .setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
+                        .setResolutionStrategy(
+                            ResolutionStrategy(
+                                Size(640, 480),
+                                ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER,
+                            ),
+                        )
+                        .build()
+                    val useCase = Preview.Builder().setResolutionSelector(selector).build()
+                    useCase.setSurfaceProvider(pv.surfaceProvider)
+                    val camera = if (front) CameraSelector.DEFAULT_FRONT_CAMERA
+                    else CameraSelector.DEFAULT_BACK_CAMERA
+                    provider.unbindAll()
+                    provider.bindToLifecycle(this, camera, useCase)
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Kamera tidak dapat dibuka", Toast.LENGTH_SHORT).show()
+                }
+            },
+            ContextCompat.getMainExecutor(this),
+        )
     }
 
     // ------------------------------------------------------------- notifikasi
