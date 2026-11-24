@@ -92,6 +92,7 @@ fun AppTheme(content: @Composable () -> Unit) {
 
 private enum class Tab(val label: String) {
     REKAM("Rekam"),
+    MEDIA("Media"),
     VIDEO("Video"),
     AUDIO("Audio"),
     PENGATURAN("Pengaturan"),
@@ -143,7 +144,9 @@ fun MainScreen(
             }
         },
     ) { pad ->
-        Column(
+        if (Tab.entries[tab] == Tab.MEDIA) {
+            Box(Modifier.padding(pad).padding(horizontal = 20.dp)) { MediaTab() }
+        } else Column(
             Modifier
                 .padding(pad)
                 .verticalScroll(rememberScrollState())
@@ -152,6 +155,7 @@ fun MainScreen(
         ) {
             Spacer(Modifier.height(24.dp))
             when (Tab.entries[tab]) {
+                Tab.MEDIA -> Unit
                 Tab.REKAM -> RecordTab(
                     s, recording, startedAt, now, floating, onStart, onStop, onFloating, facecam, onFacecam, watermark,
                 )
@@ -725,6 +729,24 @@ private fun TabIcon(tab: Tab) {
             Tab.REKAM -> {
                 drawCircle(color, radius = w * 0.42f, style = Stroke(sw))
                 drawCircle(color, radius = w * 0.2f)
+            }
+            Tab.MEDIA -> {
+                val ys = floatArrayOf(0.28f, 0.5f, 0.72f)
+                for (y in ys) {
+                    drawRoundRect(
+                        color = color,
+                        topLeft = Offset(w * 0.08f, h * (y - 0.07f)),
+                        size = Size(w * 0.16f, h * 0.14f),
+                        cornerRadius = CornerRadius(w * 0.03f),
+                    )
+                    drawLine(
+                        color = color,
+                        start = Offset(w * 0.34f, h * y),
+                        end = Offset(w * 0.92f, h * y),
+                        strokeWidth = sw,
+                        cap = StrokeCap.Round,
+                    )
+                }
             }
             Tab.VIDEO -> {
                 drawRoundRect(
