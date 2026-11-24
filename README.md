@@ -56,9 +56,19 @@ Di tab Video, satu ketukan mengatur resolusi, frame rate, bitrate, dan codec:
 - Kualitas: 1080p, 60 fps, 16 Mbps, H.264.
 Jika pengaturan diubah manual, tampil sebagai Kustom.
 
+## Watermark
+Di tab Rekam, pilih gambar dari penyimpanan HP lalu nyalakan saklar Watermark (butuh izin "Tampil di atas
+aplikasi lain"). Gambar tampil di tengah atas layar dan ikut terekam.
+- Geser untuk memindahkan (bisa sampai ke tengah layar). Posisi disimpan terpisah untuk tiap arah layar
+  (portrait, portrait terbalik, landscape, landscape terbalik).
+- Cubit dua jari untuk membesarkan atau mengecilkan, putar dua jari untuk memutar 360 derajat.
+- Ketuk gambar untuk menampilkan tombol kunci. Setelah dikunci, posisi, ukuran, dan putaran tidak bisa
+  diubah dan jendelanya tidak menerima sentuhan. Buka kunci lewat saklar di tab Rekam atau notifikasi.
+- Sebelum dikunci, seret gambar ke ikon tempat sampah yang muncul di bawah layar untuk membuangnya.
+
 ## Kamera (facecam)
 Nyalakan saklar "Kamera (facecam)" di tab Rekam (butuh izin kamera dan "Tampil di atas aplikasi lain").
-Kamera depan tampil di kiri atas layar dan ikut terekam. Geser untuk memindahkan. Ketuk kamera untuk
+Kamera depan tampil di kiri atas layar dan ikut terekam. Arah gambar mengikuti arah HP. Geser untuk memindahkan. Ketuk kamera untuk
 menampilkan tombol: pengaturan (bentuk segi empat atau lingkaran, efek Bright/Warm/Dark), tutup,
 balik kamera depan/belakang, dan ubah ukuran (seret).
 
