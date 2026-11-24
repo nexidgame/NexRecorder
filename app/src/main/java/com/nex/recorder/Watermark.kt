@@ -125,7 +125,7 @@ object WmPrefs {
 
 /**
  * Watermark: gambar dari penyimpanan yang tampil di atas layar dan ikut terekam.
- * Posisi awal di tengah atas layar (untuk setiap arah layar). Geser untuk memindahkan (mode bebas, atau mode vertikal: hanya naik-turun dari atas sampai tengah), cubit untuk
+ * Posisi awal di tengah atas layar (untuk setiap arah layar). Geser untuk memindahkan (mode bebas, atau mode vertikal: hanya naik-turun dari atas sampai bawah), cubit untuk
  * membesarkan/mengecilkan, putar dua jari untuk memutar 360 derajat. Ketuk untuk menampilkan tombol kunci.
  * Setelah dikunci, jendelanya tidak menerima sentuhan sama sekali (tidak mengganggu game).
  * Sebelum dikunci, watermark bisa dibuang dengan menyeretnya ke ikon tempat sampah.
@@ -366,9 +366,9 @@ class WatermarkService : Service() {
 
     private fun clampCenter() {
         if (vertical) {
-            // Selalu di tengah horizontal; vertikal hanya dari atas sampai tengah layar.
+            // Selalu di tengah horizontal; vertikal bebas dari paling atas sampai paling bawah layar.
             val top = boundsHeight() / 2f + dp(4)
-            val bottom = max(top, screenH / 2f)
+            val bottom = max(top, screenH - boundsHeight() / 2f - dp(4))
             cx = screenW / 2f
             cy = cy.coerceIn(top, bottom)
         } else {
