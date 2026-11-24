@@ -353,7 +353,7 @@ class WatermarkService : Service() {
         if (vertical) {
             val vy = WmPrefs.vPosY(this, rot)
             cx = screenW / 2f
-            cy = if (vy >= 0f) vy * screenH else boundsHeight() / 2f + dp(4)
+            cy = if (vy >= 0f) vy * screenH else screenH / 2f // awal: tengah-tengah layar
         } else if (fx >= 0f && fy >= 0f) {
             cx = fx * screenW
             cy = fy * screenH
