@@ -67,7 +67,7 @@ aplikasi lain"). Gambar tampil di tengah atas layar dan ikut terekam.
 - Slider "Transparansi" mengatur kepekatan watermark (10% sampai 100%), terpisah dari kunci posisi.
 - Cubit dua jari untuk membesarkan atau mengecilkan, putar dua jari untuk memutar 360 derajat.
 - Ketuk gambar untuk menampilkan tombol kunci. Setelah dikunci, posisi, ukuran, dan putaran tidak bisa
-  diubah dan jendelanya tidak menerima sentuhan. Buka kunci lewat saklar di tab Rekam atau notifikasi.
+  diubah dan tampilannya tetap jelas (tidak jadi transparan). Hanya area gambar yang menahan sentuhan ke game. Buka kunci lewat saklar di tab Rekam atau notifikasi.
 - Sebelum dikunci, seret gambar ke ikon tempat sampah yang muncul di bawah layar untuk membuangnya.
 
 ## Kamera (facecam)
