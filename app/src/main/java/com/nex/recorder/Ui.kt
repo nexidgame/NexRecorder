@@ -246,6 +246,7 @@ private fun WatermarkCard(a: WatermarkActions) {
     val locked by WatermarkState.locked.collectAsState()
     val hasImage by WatermarkState.hasImage.collectAsState()
     val vertical by WatermarkState.vertical.collectAsState()
+    val wmAlpha by WatermarkState.alpha.collectAsState()
     val ctx = androidx.compose.ui.platform.LocalContext.current
     SectionCard(spacing = 8.dp) {
         Row(
@@ -296,7 +297,30 @@ private fun WatermarkCard(a: WatermarkActions) {
             Text(
                 "Mati: watermark bebas digeser ke mana saja. Aktif: watermark selalu di tengah layar " +
                     "(kiri-kanan) dan hanya bisa digeser naik-turun dari atas sampai tengah layar. " +
-                    "Cubitan hanya mengubah ukuran, posisi tengahnya tidak bergeser.",
+                    "Cubitan hanya mengubah ukuran (tidak bisa diputar), posisi tengahnya tidak bergeser.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text("Transparansi", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "${((1f - wmAlpha) * 100).roundToInt()}%",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Slider(
+                value = wmAlpha,
+                onValueChange = { WatermarkState.alpha.value = it },
+                onValueChangeFinished = { WmPrefs.setAlpha(ctx, WatermarkState.alpha.value) },
+                valueRange = 0.1f..1f,
+            )
+            Text(
+                "Geser ke kanan = makin jelas, ke kiri = makin transparan. Pengaturan ini terpisah dari kunci posisi.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
