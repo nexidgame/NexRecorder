@@ -18,7 +18,6 @@ import android.provider.MediaStore
 import androidx.media3.common.Effect
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
-import androidx.media3.common.OverlaySettings
 import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.audio.ChannelMixingAudioProcessor
 import androidx.media3.common.audio.ChannelMixingMatrix
@@ -239,7 +238,6 @@ private class LayerOverlay(
 ) : BitmapOverlay() {
     private var idx = -1
     private var bmp: Bitmap? = null
-    private val settings = OverlaySettings.Builder().build()
 
     override fun getBitmap(presentationTimeUs: Long): Bitmap {
         val tMs = presentationTimeUs / 1000
@@ -254,8 +252,6 @@ private class LayerOverlay(
         }
         return b!!
     }
-
-    override fun getOverlaySettings(presentationTimeUs: Long): OverlaySettings = settings
 }
 
 // ------------------------------------------------------------------ mesin
