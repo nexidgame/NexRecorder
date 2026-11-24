@@ -40,6 +40,13 @@
             android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
+        <!-- Pemutar dan penyunting hasil rekaman (tab Media) -->
+        <activity
+            android:name=".EditorActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize"
+            android:theme="@style/Theme.NexRecorder" />
+
         <!-- Editor area cakupan geser (layar penuh) -->
         <activity
             android:name=".CoverageActivity"
