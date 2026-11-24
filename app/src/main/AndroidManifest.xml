@@ -55,6 +55,15 @@
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
         <service
+            android:name=".WatermarkService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="watermark_overlay" />
+        </service>
+
+        <service
             android:name=".FaceCamService"
             android:exported="false"
             android:foregroundServiceType="camera" />
