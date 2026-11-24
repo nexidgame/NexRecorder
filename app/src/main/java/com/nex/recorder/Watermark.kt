@@ -62,6 +62,7 @@ object WatermarkState {
     val hasImage = MutableStateFlow(false)
     val resetTick = MutableStateFlow(0)
     val vertical = MutableStateFlow(false) // true = geser vertikal saja (atas ke tengah)
+    val alpha = MutableStateFlow(1f)       // kepekatan watermark 0.1 - 1.0
 }
 
 /** Aksi watermark yang dipanggil dari layar (diimplementasikan MainActivity). */
@@ -95,6 +96,10 @@ object WmPrefs {
     fun setPos(c: Context, rot: Int, fx: Float, fy: Float) =
         sp(c).edit().putFloat("x$rot", fx).putFloat("y$rot", fy).apply()
 
+    /** Kepekatan watermark (1 = tidak transparan). Terpisah dari kunci posisi. */
+    fun alpha(c: Context) = sp(c).getFloat("alpha", 1f).coerceIn(0.1f, 1f)
+    fun setAlpha(c: Context, v: Float) = sp(c).edit().putFloat("alpha", v.coerceIn(0.1f, 1f)).apply()
+
     /** Mode geser: false = bebas, true = hanya vertikal dari atas sampai tengah layar. */
     fun vertical(c: Context) = sp(c).getBoolean("vertical", false)
     fun setVertical(c: Context, v: Boolean) = sp(c).edit().putBoolean("vertical", v).apply()
@@ -114,6 +119,7 @@ object WmPrefs {
         WatermarkState.hasImage.value = has
         WatermarkState.locked.value = has && locked(c)
         WatermarkState.vertical.value = vertical(c)
+        WatermarkState.alpha.value = alpha(c)
     }
 }
 
@@ -148,6 +154,7 @@ class WatermarkService : Service() {
     private var screenH = 0
     private var locked = false
     private var vertical = false
+    private var wmAlpha = 1f
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -157,6 +164,13 @@ class WatermarkService : Service() {
         super.onCreate()
         wm = getSystemService(WINDOW_SERVICE) as WindowManager
         vertical = WmPrefs.vertical(this)
+        wmAlpha = WmPrefs.alpha(this)
+        scope.launch {
+            WatermarkState.alpha.collect {
+                wmAlpha = it
+                image?.alpha = it
+            }
+        }
         scope.launch { WatermarkState.locked.collect { applyLocked(it) } }
         scope.launch {
             WatermarkState.vertical.collect {
@@ -293,6 +307,7 @@ class WatermarkService : Service() {
         val iv = ImageView(this).apply {
             setImageBitmap(bmp)
             scaleType = ImageView.ScaleType.FIT_XY
+            alpha = wmAlpha
         }
         val r = FrameLayout(this)
         r.addView(iv, FrameLayout.LayoutParams(bmpW, bmpH, Gravity.CENTER))
@@ -325,7 +340,7 @@ class WatermarkService : Service() {
     private fun boundsHeight(): Float {
         val w = bmpW * scale
         val h = bmpH * scale
-        val rad = Math.toRadians(angle.toDouble())
+        val rad = Math.toRadians((if (vertical) 0f else angle).toDouble())
         return (abs(w * sin(rad)) + abs(h * cos(rad))).toFloat()
     }
 
@@ -371,7 +386,7 @@ class WatermarkService : Service() {
         lp.x = (cx - diag / 2f).roundToInt()
         lp.y = (cy - diag / 2f).roundToInt()
         image?.layoutParams = FrameLayout.LayoutParams(w.roundToInt(), h.roundToInt(), Gravity.CENTER)
-        image?.rotation = angle
+        image?.rotation = if (vertical) 0f else angle // mode vertikal: tidak diputar
         root?.let { try { wm.updateViewLayout(it, lp) } catch (e: Exception) { } }
     }
 
@@ -423,7 +438,7 @@ class WatermarkService : Service() {
                     multi = true
                     moved = true
                     hideTrash()
-                    image?.alpha = 1f
+                    image?.alpha = wmAlpha
                     showLock(false)
                     startDist = max(dist(e), 1f)
                     startScale = scale
@@ -433,10 +448,12 @@ class WatermarkService : Service() {
                     if (multi && e.pointerCount >= 2) {
                         scale = (startScale * dist(e) / startDist).coerceIn(WM_MIN_SCALE, WM_MAX_SCALE)
                         val a = ang(e)
-                        var delta = a - lastAngle
-                        if (delta > 180f) delta -= 360f
-                        if (delta < -180f) delta += 360f
-                        angle = ((angle + delta) % 360f + 360f) % 360f
+                        if (!vertical) {
+                            var delta = a - lastAngle
+                            if (delta > 180f) delta -= 360f
+                            if (delta < -180f) delta += 360f
+                            angle = ((angle + delta) % 360f + 360f) % 360f
+                        }
                         lastAngle = a
                         clampCenter()
                         applyLayout()
@@ -453,7 +470,7 @@ class WatermarkService : Service() {
                             showTrash()
                             val over = overTrash(e.rawX, e.rawY)
                             trash?.activate(over)
-                            image?.alpha = if (over) 0.6f else 1f
+                            image?.alpha = if (over) wmAlpha * 0.6f else wmAlpha
                         }
                     }
                 }
@@ -477,13 +494,13 @@ class WatermarkService : Service() {
                     } else {
                         val dropped = overTrash(e.rawX, e.rawY)
                         hideTrash()
-                        image?.alpha = 1f
+                        image?.alpha = wmAlpha
                         if (dropped) discard() else savePlacement()
                     }
                 }
                 MotionEvent.ACTION_CANCEL -> {
                     hideTrash()
-                    image?.alpha = 1f
+                    image?.alpha = wmAlpha
                     savePlacement()
                 }
             }
