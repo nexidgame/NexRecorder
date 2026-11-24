@@ -80,6 +80,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -827,7 +828,7 @@ private fun CutPanel(m: Meta, st: EditState, pos: Long, onChange: (EditState) ->
     )
     Button(
         onClick = {
-            onChange(st.copy(cuts = st.cuts + (cs..ce)))
+            onChange(st.copy(cuts = st.cuts + listOf(cs..ce)))
             cs = -1L
             ce = -1L
         },
