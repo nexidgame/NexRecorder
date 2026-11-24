@@ -278,8 +278,8 @@ private fun WatermarkCard(a: WatermarkActions) {
                 Switch(locked, a.lock, enabled = enabled)
             }
             Text(
-                "Saat dikunci, watermark tidak bisa digeser, diubah ukurannya, diputar, atau dibuang, " +
-                    "dan tidak menerima sentuhan sehingga game di bawahnya tetap bisa disentuh.",
+                "Saat dikunci, watermark tidak bisa digeser, diubah ukurannya, diputar, atau dibuang. " +
+                    "Tampilannya tetap jelas (tidak jadi transparan). Hanya area gambar yang menahan sentuhan.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
