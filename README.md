@@ -62,7 +62,7 @@ aplikasi lain"). Gambar tampil di tengah atas layar dan ikut terekam.
 - Geser untuk memindahkan (bisa sampai ke tengah layar). Posisi disimpan terpisah untuk tiap arah layar
   (portrait, portrait terbalik, landscape, landscape terbalik).
 - Saklar "Geser vertikal saja" (muncul setelah gambar dipilih): Mati = watermark bebas digeser ke mana saja.
-  Aktif = watermark selalu di tengah layar (kiri-kanan), hanya bisa digeser naik-turun dari atas sampai tengah
+  Aktif = watermark selalu di tengah layar (kiri-kanan), hanya bisa digeser naik-turun dari paling atas sampai paling bawah
   layar (posisi awalnya di tengah-tengah layar), dan cubitan hanya mengubah ukuran tanpa menggeser posisi tengahnya (tidak bisa diputar). Posisi tiap mode disimpan terpisah.
 - Slider "Transparansi" mengatur kepekatan watermark (10% sampai 100%), terpisah dari kunci posisi.
 - Cubit dua jari untuk membesarkan atau mengecilkan, putar dua jari untuk memutar 360 derajat.
