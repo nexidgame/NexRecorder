@@ -103,6 +103,7 @@ fun MainScreen(
     onStop: () -> Unit,
     onFloating: (Boolean) -> Unit,
     onFacecam: (Boolean) -> Unit,
+    watermark: WatermarkActions,
 ) {
     val ctx = LocalContext.current
     var s by remember { mutableStateOf(Prefs.load(ctx)) }
@@ -152,7 +153,7 @@ fun MainScreen(
             Spacer(Modifier.height(24.dp))
             when (Tab.entries[tab]) {
                 Tab.REKAM -> RecordTab(
-                    s, recording, startedAt, now, floating, onStart, onStop, onFloating, facecam, onFacecam,
+                    s, recording, startedAt, now, floating, onStart, onStop, onFloating, facecam, onFacecam, watermark,
                 )
                 Tab.VIDEO -> VideoTab(s, recording) { update(it) }
                 Tab.AUDIO -> AudioTab(s, recording) { update(it) }
@@ -177,6 +178,7 @@ private fun RecordTab(
     onFloating: (Boolean) -> Unit,
     facecam: Boolean,
     onFacecam: (Boolean) -> Unit,
+    watermark: WatermarkActions,
 ) {
     Text(
         "Nex Recorder",
@@ -233,6 +235,55 @@ private fun RecordTab(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+    Spacer(Modifier.height(16.dp))
+    WatermarkCard(watermark)
+}
+
+@Composable
+private fun WatermarkCard(a: WatermarkActions) {
+    val enabled by WatermarkState.enabled.collectAsState()
+    val locked by WatermarkState.locked.collectAsState()
+    val hasImage by WatermarkState.hasImage.collectAsState()
+    SectionCard(spacing = 8.dp) {
+        Row(
+            Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text("Watermark", style = MaterialTheme.typography.bodyLarge)
+            Switch(enabled, a.toggle)
+        }
+        Text(
+            "Gambar dari penyimpanan HP yang ikut terekam. Posisi awal di tengah atas layar. " +
+                "Geser untuk memindahkan, cubit dua jari untuk memperbesar atau memperkecil, " +
+                "putar dua jari untuk memutar 360 derajat. Ketuk gambar untuk menampilkan tombol kunci. " +
+                "Seret ke ikon tempat sampah untuk membuangnya (hanya saat belum dikunci).",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        OutlinedButton(onClick = a.pick, modifier = Modifier.fillMaxWidth()) {
+            Text(if (hasImage) "Ganti gambar" else "Pilih gambar")
+        }
+        if (hasImage) {
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text("Kunci posisi", style = MaterialTheme.typography.bodyLarge)
+                Switch(locked, a.lock, enabled = enabled)
+            }
+            Text(
+                "Saat dikunci, watermark tidak bisa digeser, diubah ukurannya, diputar, atau dibuang, " +
+                    "dan tidak menerima sentuhan sehingga game di bawahnya tetap bisa disentuh.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedButton(onClick = a.reset, modifier = Modifier.fillMaxWidth()) {
+                Text("Kembalikan posisi awal")
+            }
+        }
     }
 }
 
