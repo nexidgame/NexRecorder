@@ -399,7 +399,7 @@ class QuickStartActivity : ComponentActivity() {
 }
 
 /** Ikon tempat sampah bulat yang digambar sendiri; membesar dan memerah saat tombol berada di atasnya. */
-private class TrashView(context: Context) : View(context) {
+internal class TrashView(context: Context) : View(context) {
     private val bg = Paint(Paint.ANTI_ALIAS_FLAG)
     private val fg = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
