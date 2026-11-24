@@ -63,12 +63,23 @@ aplikasi lain"). Gambar tampil di tengah atas layar dan ikut terekam.
   (portrait, portrait terbalik, landscape, landscape terbalik).
 - Saklar "Geser vertikal saja" (muncul setelah gambar dipilih): Mati = watermark bebas digeser ke mana saja.
   Aktif = watermark selalu di tengah layar (kiri-kanan), hanya bisa digeser naik-turun dari atas sampai tengah
-  layar, dan cubitan hanya mengubah ukuran tanpa menggeser posisi tengahnya (tidak bisa diputar). Posisi tiap mode disimpan terpisah.
+  layar (posisi awalnya di tengah-tengah layar), dan cubitan hanya mengubah ukuran tanpa menggeser posisi tengahnya (tidak bisa diputar). Posisi tiap mode disimpan terpisah.
 - Slider "Transparansi" mengatur kepekatan watermark (10% sampai 100%), terpisah dari kunci posisi.
 - Cubit dua jari untuk membesarkan atau mengecilkan, putar dua jari untuk memutar 360 derajat.
 - Ketuk gambar untuk menampilkan tombol kunci. Setelah dikunci, posisi, ukuran, dan putaran tidak bisa
   diubah dan tampilannya tetap jelas (tidak jadi transparan). Hanya area gambar yang menahan sentuhan ke game. Buka kunci lewat saklar di tab Rekam atau notifikasi.
 - Sebelum dikunci, seret gambar ke ikon tempat sampah yang muncul di bawah layar untuk membuangnya.
+
+## Tab Media (pemutar dan penyunting)
+Tab "Media" menampilkan daftar hasil rekaman (Movies/NexRecorder). Ketuk satu video untuk membuka pemutar:
+tombol Edit, Sebelumnya, Putar/Jeda, Selanjutnya. Tombol Edit menampilkan atau menyembunyikan menu suntingan.
+- Menu atas: Trim, Cut, Mute, Kompres & Resolusi, Crop & Rasio.
+- Fitur tambahan: Sensor Area, Teks/Subtitle, Kecepatan (0.5x/1x/1.5x/2x), Putar & Flip, Musik Latar,
+  Sulih Suara, Coretan, Video ke GIF, Ekstrak Audio (M4A), Bingkai Kanvas, Watermark, Smart Trim.
+- Semua suntingan dikumpulkan lalu diterapkan sekaligus lewat "Simpan hasil" menjadi video baru
+  (NexEdit_*.mp4); video asli tidak diubah. GIF disimpan di Pictures/NexRecorder, audio di Music/NexRecorder.
+- Memakai Media3 (ExoPlayer + Transformer). Batasan: sensor area berupa kotak penutup (bukan blur halus),
+  latar bingkai kanvas hitam polos, ekstrak audio hanya M4A, pratinjau belum menampilkan crop/putar.
 
 ## Kamera (facecam)
 Nyalakan saklar "Kamera (facecam)" di tab Rekam (butuh izin kamera dan "Tampil di atas aplikasi lain").
