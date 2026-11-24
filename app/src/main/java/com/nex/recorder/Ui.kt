@@ -300,7 +300,7 @@ private fun WatermarkCard(a: WatermarkActions) {
             }
             Text(
                 "Mati: watermark bebas digeser ke mana saja. Aktif: watermark selalu di tengah layar " +
-                    "(kiri-kanan) dan hanya bisa digeser naik-turun dari atas sampai tengah layar. " +
+                    "(kiri-kanan) dan hanya bisa digeser naik-turun dari paling atas sampai paling bawah layar (posisi awal tetap di tengah). " +
                     "Cubitan hanya mengubah ukuran (tidak bisa diputar), posisi tengahnya tidak bergeser.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
