@@ -245,6 +245,8 @@ private fun WatermarkCard(a: WatermarkActions) {
     val enabled by WatermarkState.enabled.collectAsState()
     val locked by WatermarkState.locked.collectAsState()
     val hasImage by WatermarkState.hasImage.collectAsState()
+    val vertical by WatermarkState.vertical.collectAsState()
+    val ctx = androidx.compose.ui.platform.LocalContext.current
     SectionCard(spacing = 8.dp) {
         Row(
             Modifier.fillMaxWidth(),
@@ -277,6 +279,24 @@ private fun WatermarkCard(a: WatermarkActions) {
             Text(
                 "Saat dikunci, watermark tidak bisa digeser, diubah ukurannya, diputar, atau dibuang, " +
                     "dan tidak menerima sentuhan sehingga game di bawahnya tetap bisa disentuh.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text("Geser vertikal saja", style = MaterialTheme.typography.bodyLarge)
+                Switch(vertical, { v ->
+                    WmPrefs.setVertical(ctx, v)
+                    WatermarkState.vertical.value = v
+                })
+            }
+            Text(
+                "Mati: watermark bebas digeser ke mana saja. Aktif: watermark selalu di tengah layar " +
+                    "(kiri-kanan) dan hanya bisa digeser naik-turun dari atas sampai tengah layar. " +
+                    "Cubitan hanya mengubah ukuran, posisi tengahnya tidak bergeser.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
