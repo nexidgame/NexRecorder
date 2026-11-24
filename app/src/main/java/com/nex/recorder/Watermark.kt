@@ -61,6 +61,7 @@ object WatermarkState {
     val locked = MutableStateFlow(false)
     val hasImage = MutableStateFlow(false)
     val resetTick = MutableStateFlow(0)
+    val vertical = MutableStateFlow(false) // true = geser vertikal saja (atas ke tengah)
 }
 
 /** Aksi watermark yang dipanggil dari layar (diimplementasikan MainActivity). */
@@ -94,9 +95,17 @@ object WmPrefs {
     fun setPos(c: Context, rot: Int, fx: Float, fy: Float) =
         sp(c).edit().putFloat("x$rot", fx).putFloat("y$rot", fy).apply()
 
+    /** Mode geser: false = bebas, true = hanya vertikal dari atas sampai tengah layar. */
+    fun vertical(c: Context) = sp(c).getBoolean("vertical", false)
+    fun setVertical(c: Context, v: Boolean) = sp(c).edit().putBoolean("vertical", v).apply()
+
+    /** Pusat vertikal (pecahan tinggi layar) untuk mode vertikal; -1 = posisi awal di atas. */
+    fun vPosY(c: Context, rot: Int) = sp(c).getFloat("vy$rot", -1f)
+    fun setVPosY(c: Context, rot: Int, fy: Float) = sp(c).edit().putFloat("vy$rot", fy).apply()
+
     fun resetTransform(c: Context) {
         val e = sp(c).edit().remove("scale").remove("angle")
-        for (r in 0..3) e.remove("x$r").remove("y$r")
+        for (r in 0..3) e.remove("x$r").remove("y$r").remove("vy$r")
         e.apply()
     }
 
@@ -104,12 +113,13 @@ object WmPrefs {
         val has = imageFile(c).exists()
         WatermarkState.hasImage.value = has
         WatermarkState.locked.value = has && locked(c)
+        WatermarkState.vertical.value = vertical(c)
     }
 }
 
 /**
  * Watermark: gambar dari penyimpanan yang tampil di atas layar dan ikut terekam.
- * Posisi awal di tengah atas layar (untuk setiap arah layar). Geser untuk memindahkan, cubit untuk
+ * Posisi awal di tengah atas layar (untuk setiap arah layar). Geser untuk memindahkan (mode bebas, atau mode vertikal: hanya naik-turun dari atas sampai tengah), cubit untuk
  * membesarkan/mengecilkan, putar dua jari untuk memutar 360 derajat. Ketuk untuk menampilkan tombol kunci.
  * Setelah dikunci, jendelanya tidak menerima sentuhan sama sekali (tidak mengganggu game).
  * Sebelum dikunci, watermark bisa dibuang dengan menyeretnya ke ikon tempat sampah.
@@ -137,6 +147,7 @@ class WatermarkService : Service() {
     private var screenW = 0
     private var screenH = 0
     private var locked = false
+    private var vertical = false
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -145,7 +156,19 @@ class WatermarkService : Service() {
     override fun onCreate() {
         super.onCreate()
         wm = getSystemService(WINDOW_SERVICE) as WindowManager
+        vertical = WmPrefs.vertical(this)
         scope.launch { WatermarkState.locked.collect { applyLocked(it) } }
+        scope.launch {
+            WatermarkState.vertical.collect {
+                if (it == vertical) return@collect
+                vertical = it
+                if (root != null) {
+                    refreshScreen()
+                    placeFromPrefs()
+                    applyLayout()
+                }
+            }
+        }
         val initial = WatermarkState.resetTick.value
         scope.launch {
             WatermarkState.resetTick.collect { if (it != initial) resetPlacement() }
@@ -311,7 +334,11 @@ class WatermarkService : Service() {
         val rot = displayRotation()
         val fx = WmPrefs.posX(this, rot)
         val fy = WmPrefs.posY(this, rot)
-        if (fx >= 0f && fy >= 0f) {
+        if (vertical) {
+            val vy = WmPrefs.vPosY(this, rot)
+            cx = screenW / 2f
+            cy = if (vy >= 0f) vy * screenH else boundsHeight() / 2f + dp(4)
+        } else if (fx >= 0f && fy >= 0f) {
             cx = fx * screenW
             cy = fy * screenH
         } else {
@@ -322,8 +349,16 @@ class WatermarkService : Service() {
     }
 
     private fun clampCenter() {
-        cx = cx.coerceIn(0f, screenW.toFloat())
-        cy = cy.coerceIn(0f, screenH.toFloat())
+        if (vertical) {
+            // Selalu di tengah horizontal; vertikal hanya dari atas sampai tengah layar.
+            val top = boundsHeight() / 2f + dp(4)
+            val bottom = max(top, screenH / 2f)
+            cx = screenW / 2f
+            cy = cy.coerceIn(top, bottom)
+        } else {
+            cx = cx.coerceIn(0f, screenW.toFloat())
+            cy = cy.coerceIn(0f, screenH.toFloat())
+        }
     }
 
     /** Memasang ukuran, putaran, dan posisi ke jendela. Jendela berbentuk kotak sebesar diagonal gambar agar muat saat diputar. */
@@ -342,7 +377,8 @@ class WatermarkService : Service() {
 
     private fun savePlacement() {
         if (screenW <= 0 || screenH <= 0) return
-        WmPrefs.setPos(this, displayRotation(), cx / screenW, cy / screenH)
+        if (vertical) WmPrefs.setVPosY(this, displayRotation(), cy / screenH)
+        else WmPrefs.setPos(this, displayRotation(), cx / screenW, cy / screenH)
         WmPrefs.setTransform(this, scale, angle)
     }
 
@@ -402,13 +438,14 @@ class WatermarkService : Service() {
                         if (delta < -180f) delta += 360f
                         angle = ((angle + delta) % 360f + 360f) % 360f
                         lastAngle = a
+                        clampCenter()
                         applyLayout()
                     } else if (!multi) {
                         val dx = e.rawX - downX
                         val dy = e.rawY - downY
                         if (!moved && (abs(dx) > slop || abs(dy) > slop)) moved = true
                         if (moved) {
-                            cx = startCx + dx
+                            cx = if (vertical) screenW / 2f else startCx + dx
                             cy = startCy + dy
                             clampCenter()
                             applyLayout()
