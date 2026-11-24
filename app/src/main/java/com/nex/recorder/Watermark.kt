@@ -262,7 +262,8 @@ class WatermarkService : Service() {
             WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
             WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
             WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED
-        if (locked) f = f or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+        // Sengaja tanpa FLAG_NOT_TOUCHABLE: bendera itu membuat Android 12+ membatasi kepekatan overlay
+        // (jadi agak transparan). Saat dikunci, jendela dibuat pas sebesar gambar dan menolak semua sentuhan.
         return f
     }
 
@@ -380,11 +381,20 @@ class WatermarkService : Service() {
     private fun applyLayout() {
         val w = bmpW * scale
         val h = bmpH * scale
-        val diag = hypot(w, h).roundToInt() + dp(16)
-        lp.width = diag
-        lp.height = diag
-        lp.x = (cx - diag / 2f).roundToInt()
-        lp.y = (cy - diag / 2f).roundToInt()
+        if (locked) {
+            // Terkunci: jendela pas sebesar gambar agar area yang menahan sentuhan sekecil mungkin.
+            val rad = Math.toRadians((if (vertical) 0f else angle).toDouble())
+            val bw = (abs(w * cos(rad)) + abs(h * sin(rad))).toFloat()
+            val bh = (abs(w * sin(rad)) + abs(h * cos(rad))).toFloat()
+            lp.width = bw.roundToInt() + 2
+            lp.height = bh.roundToInt() + 2
+        } else {
+            val diag = hypot(w, h).roundToInt() + dp(16)
+            lp.width = diag
+            lp.height = diag
+        }
+        lp.x = (cx - lp.width / 2f).roundToInt()
+        lp.y = (cy - lp.height / 2f).roundToInt()
         image?.layoutParams = FrameLayout.LayoutParams(w.roundToInt(), h.roundToInt(), Gravity.CENTER)
         image?.rotation = if (vertical) 0f else angle // mode vertikal: tidak diputar
         root?.let { try { wm.updateViewLayout(it, lp) } catch (e: Exception) { } }
@@ -425,6 +435,7 @@ class WatermarkService : Service() {
             Math.toDegrees(atan2((e.getY(1) - e.getY(0)).toDouble(), (e.getX(1) - e.getX(0)).toDouble())).toFloat()
 
         v.setOnTouchListener { _, e ->
+            if (locked) return@setOnTouchListener true // terkunci: abaikan semua sentuhan
             when (e.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     downX = e.rawX
@@ -535,7 +546,7 @@ class WatermarkService : Service() {
         showLock(false)
         if (root != null) {
             lp.flags = flags()
-            root?.let { try { wm.updateViewLayout(it, lp) } catch (e: Exception) { } }
+            applyLayout()
             val nm = getSystemService(NotificationManager::class.java)
             nm.notify(NOTIF_ID, buildNotification())
         }
