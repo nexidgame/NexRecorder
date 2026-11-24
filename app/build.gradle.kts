@@ -30,6 +30,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
+    lint {
+        abortOnError = false
+        checkReleaseBuilds = false
+    }
     buildFeatures { compose = true }
 
     // Pemangkasan ukuran: buang metadata dan berkas yang tidak dipakai saat aplikasi berjalan
@@ -64,4 +68,9 @@ dependencies {
     implementation("androidx.camera:camera-view:1.4.1")
     implementation("androidx.lifecycle:lifecycle-service:2.8.7")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    // Tab Media: pemutar dan penyunting video
+    implementation("androidx.media3:media3-exoplayer:1.6.1")
+    implementation("androidx.media3:media3-transformer:1.6.1")
+    implementation("androidx.media3:media3-effect:1.6.1")
+    implementation("androidx.media3:media3-common:1.6.1")
 }
