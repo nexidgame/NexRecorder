@@ -41,7 +41,7 @@ Empat tab di bagian bawah:
 
 ## Tombol rekam melayang
 Aktifkan saklar "Tombol rekam melayang" di aplikasi (butuh izin "Tampil di atas aplikasi lain").
-Tombol merah muncul di tengah layar dan bisa digeser. Saat digeser, ikon tempat sampah muncul di
+Tombol biru muncul di tengah layar dan bisa digeser. Saat digeser, ikon tempat sampah muncul di
 bagian bawah layar; lepaskan tombol di atasnya untuk menghapus (mematikan) tombol melayang, lalu
 aktifkan lagi lewat saklar di tab Rekam. Ketuk untuk mulai merekam; tombol langsung
 hilang sehingga tidak ikut terekam, dan muncul lagi setelah rekaman selesai disimpan.
@@ -88,8 +88,8 @@ menampilkan tombol: pengaturan (bentuk segi empat atau lingkaran, efek Bright/Wa
 balik kamera depan/belakang, dan ubah ukuran (seret).
 
 ## Trigger mode
-Di tab Pengaturan, pilih cara memunculkan tombol hijau saat merekam (aktif jika tombol rekam melayang
-dinyalakan). Geser dari tepi layar, lalu ketuk tombol hijau untuk menyimpan rekaman. Tombol hijau hilang
+Di tab Pengaturan, pilih cara memunculkan tombol biru saat merekam (aktif jika tombol rekam melayang
+dinyalakan). Geser dari tepi layar, lalu ketuk tombol biru untuk menyimpan rekaman. Tombol biru hilang
 sendiri setelah beberapa detik jika tidak diketuk, dan tombol rekam muncul lagi setelah rekaman tersimpan.
 - Klik Ikon: hanya tombol rekam melayang (berhenti lewat notifikasi).
 - Geser dari Sisi: geser dari tepi layar (kanan, kiri, atau kedua sisi).
