@@ -628,7 +628,7 @@ class WatermarkService : Service() {
 
 /** Tombol kunci bulat yang muncul saat watermark diketuk; gembok digambar sendiri. */
 private class LockButton(context: Context) : View(context) {
-    private val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(190, 25, 25, 25) }
+    private val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(230, 37, 99, 235) }
     private val fg = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         color = Color.WHITE

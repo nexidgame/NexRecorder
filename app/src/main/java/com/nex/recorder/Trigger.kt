@@ -24,8 +24,8 @@ import kotlin.math.roundToInt
  * Trigger geser seperti Button Savior, aktif hanya saat merekam.
  *
  * Strip tipis tak terlihat dipasang di tepi layar. Saat Anda menggeser ke dalam dari strip itu,
- * muncul tombol hijau (tanda rekaman sedang berjalan). Ketuk tombol hijau untuk menyimpan rekaman.
- * Jika tidak diketuk, tombol hijau hilang sendiri setelah beberapa detik.
+ * muncul tombol biru (tanda rekaman sedang berjalan). Ketuk tombol biru untuk menyimpan rekaman.
+ * Jika tidak diketuk, tombol biru hilang sendiri setelah beberapa detik.
  */
 class TriggerController(
     private val context: Context,
@@ -85,7 +85,7 @@ class TriggerController(
         for (sd in sides) addStrip(sd, c0, c1, thickness, minSwipe)
     }
 
-    /** Rekaman selesai: lepas strip. Tombol hijau yang sedang menampilkan centang dibiarkan hilang sendiri. */
+    /** Rekaman selesai: lepas strip. Tombol biru yang sedang menampilkan centang dibiarkan hilang sendiri. */
     fun stop() {
         removeStrips()
         if (green?.saved != true) hideGreen()
@@ -148,7 +148,7 @@ class TriggerController(
         Insets.NONE
     }
 
-    // ------------------------------------------------------------ tombol hijau
+    // ------------------------------------------------------------ tombol biru
 
     private fun showGreen(side: Int, x: Float, y: Float) {
         hideGreen()
@@ -238,7 +238,7 @@ private class SwipeStrip(
     }
 }
 
-/** Tombol hijau bulat dengan ikon berhenti; berubah menjadi centang setelah diketuk. */
+/** Tombol biru bulat dengan ikon berhenti; berubah menjadi centang setelah diketuk. */
 private class GreenButtonView(context: Context) : View(context) {
     var saved = false
         set(value) {
@@ -246,7 +246,7 @@ private class GreenButtonView(context: Context) : View(context) {
             invalidate()
         }
 
-    private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(240, 46, 160, 67) }
+    private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(245, 37, 99, 235) }
     private val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         color = Color.WHITE

@@ -18,6 +18,7 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.LayerDrawable
 import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.Bundle
@@ -60,7 +61,7 @@ object OverlayState {
 
     @Volatile var launched = false
 
-    /** Waktu (elapsedRealtime) rekaman dihentikan lewat tombol hijau; tombol rekam muncul lagi beberapa detik kemudian. */
+    /** Waktu (elapsedRealtime) rekaman dihentikan lewat tombol biru; tombol rekam muncul lagi beberapa detik kemudian. */
     @Volatile var triggerStopAt = 0L
 }
 
@@ -117,7 +118,7 @@ class OverlayService : Service() {
                 if (busy) {
                     hide()
                 } else {
-                    // Setelah berhenti lewat tombol hijau, tombol rekam muncul lagi beberapa detik kemudian.
+                    // Setelah berhenti lewat tombol biru, tombol rekam muncul lagi beberapa detik kemudian.
                     val wait = OverlayState.triggerStopAt + RESHOW_DELAY_MS - SystemClock.elapsedRealtime()
                     if (wait > 0) {
                         showJob = launch {
@@ -143,7 +144,7 @@ class OverlayService : Service() {
         if (RecorderState.startedAt.value != 0L) trigger.start(Prefs.load(this))
     }
 
-    /** Tombol hijau diketuk: hentikan dan simpan rekaman. */
+    /** Tombol biru diketuk: hentikan dan simpan rekaman. */
     private fun stopFromTrigger() {
         OverlayState.triggerStopAt = SystemClock.elapsedRealtime()
         startService(Intent(this, RecorderService::class.java).setAction(ACTION_STOP))
@@ -177,14 +178,23 @@ class OverlayService : Service() {
 
     private fun show() {
         if (view != null || !Settings.canDrawOverlays(this)) return
-        val size = dp(44)
+        val size = dp(48)
         val v = View(this).apply {
-            background = GradientDrawable().apply {
+            val outer = GradientDrawable(
+                GradientDrawable.Orientation.TOP_BOTTOM,
+                intArrayOf(Color.rgb(91, 155, 255), Color.rgb(29, 78, 216)),
+            ).apply {
                 shape = GradientDrawable.OVAL
-                setColor(Color.argb(230, 229, 57, 53))
                 setStroke(dp(2), Color.WHITE)
             }
-            elevation = dp(4).toFloat()
+            val dot = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(Color.WHITE)
+            }
+            background = LayerDrawable(arrayOf(outer, dot)).apply {
+                setLayerInset(1, dp(15), dp(15), dp(15), dp(15))
+            }
+            elevation = dp(6).toFloat()
             contentDescription = "Mulai rekam"
         }
         lp = WindowManager.LayoutParams(
@@ -341,7 +351,7 @@ class OverlayService : Service() {
         return NotificationCompat.Builder(this, CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_rec)
             .setContentTitle("Tombol rekam melayang aktif")
-            .setContentText("Ketuk tombol merah di layar untuk mulai merekam")
+            .setContentText("Ketuk tombol biru di layar untuk mulai merekam")
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setContentIntent(open)
@@ -398,7 +408,7 @@ class QuickStartActivity : ComponentActivity() {
     }
 }
 
-/** Ikon tempat sampah bulat yang digambar sendiri; membesar dan memerah saat tombol berada di atasnya. */
+/** Ikon tempat sampah bulat yang digambar sendiri; membesar dan membiru saat tombol berada di atasnya. */
 internal class TrashView(context: Context) : View(context) {
     private val bg = Paint(Paint.ANTI_ALIAS_FLAG)
     private val fg = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -420,7 +430,7 @@ internal class TrashView(context: Context) : View(context) {
     override fun onDraw(canvas: Canvas) {
         val w = width.toFloat()
         val h = height.toFloat()
-        bg.color = if (active) Color.argb(235, 229, 57, 53) else Color.argb(210, 40, 40, 44)
+        bg.color = if (active) Color.argb(240, 37, 99, 235) else Color.argb(225, 15, 27, 61)
         canvas.drawCircle(w / 2f, h / 2f, w / 2f, bg)
         fg.strokeWidth = w * 0.06f
         // tutup dan gagang

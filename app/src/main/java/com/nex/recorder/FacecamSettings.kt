@@ -4,7 +4,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -60,7 +59,7 @@ private fun FacecamSheet(onDone: () -> Unit) {
     Box(
         Modifier
             .fillMaxSize()
-            .background(Color(0x66000000))
+            .background(Color(0x990E1527))
             .pointerInput(Unit) { detectTapGestures { onDone() } },
     ) {
         Column(
@@ -68,7 +67,7 @@ private fun FacecamSheet(onDone: () -> Unit) {
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                .background(MaterialTheme.colorScheme.surface)
+                .background(MaterialTheme.colorScheme.surfaceContainer)
                 .pointerInput(Unit) { detectTapGestures { } } // ketukan di lembar tidak menutupnya
                 .navigationBarsPadding()
                 .padding(24.dp),
@@ -114,17 +113,16 @@ private fun PillRow(options: List<Pair<String, Int>>, selected: Int, onSelect: (
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         options.forEach { (label, value) ->
             val isSelected = value == selected
-            val shape = RoundedCornerShape(50)
+            val shape = RoundedCornerShape(14.dp)
             Box(
                 Modifier
                     .weight(1f)
-                    .height(44.dp)
+                    .height(40.dp)
                     .clip(shape)
                     .background(
-                        if (isSelected) MaterialTheme.colorScheme.secondaryContainer
-                        else Color.Transparent,
+                        if (isSelected) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.surfaceContainerHigh,
                     )
-                    .border(1.dp, MaterialTheme.colorScheme.outline, shape)
                     .selectable(
                         selected = isSelected,
                         role = Role.RadioButton,
@@ -137,7 +135,8 @@ private fun PillRow(options: List<Pair<String, Int>>, selected: Int, onSelect: (
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.labelLarge,
-                    color = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary
                     else MaterialTheme.colorScheme.onSurface,
                 )
             }

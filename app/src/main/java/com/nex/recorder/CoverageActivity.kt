@@ -91,9 +91,9 @@ private fun CoverageScreen(
     val horizontal = side == SIDE_TOP || side == SIDE_BOTTOM
     var start by rememberSaveable { mutableStateOf(initStart.toFloat()) }
     var end by rememberSaveable { mutableStateOf(initEnd.toFloat()) }
-    val barColor = Color(0xFF2196F3)
+    val barColor = Color(0xFF4C8DFF)
 
-    Box(Modifier.fillMaxSize().background(Color(0xFF303030))) {
+    Box(Modifier.fillMaxSize().background(Color(0xFF0E1527))) {
         Canvas(
             Modifier
                 .fillMaxSize()
@@ -181,7 +181,7 @@ private fun CoverageScreen(
                 "Seret pegangan di tepi layar untuk menentukan area yang merespons geseran. " +
                     "Seret batang di antaranya untuk menggesernya.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFFBDBDBD),
+                color = Color(0xFFA3B3D6),
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(12.dp))
@@ -192,14 +192,22 @@ private fun CoverageScreen(
             )
             Spacer(Modifier.height(24.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                val colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF616161),
-                    contentColor = Color.White,
-                )
-                Button(onClick = onCancel, colors = colors) { Text("Batal") }
+                val shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+                Button(
+                    onClick = onCancel,
+                    shape = shape,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF223055),
+                        contentColor = Color.White,
+                    ),
+                ) { Text("Batal") }
                 Button(
                     onClick = { onSave(start.roundToInt(), end.roundToInt()) },
-                    colors = colors,
+                    shape = shape,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF2563EB),
+                        contentColor = Color.White,
+                    ),
                 ) { Text("Simpan") }
             }
         }

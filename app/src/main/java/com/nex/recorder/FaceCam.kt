@@ -507,9 +507,9 @@ private const val KIND_CLOSE = 1
 private const val KIND_FLIP = 2
 private const val KIND_RESIZE = 3
 
-/** Tombol bulat gelap di sudut facecam; ikonnya digambar sendiri (tanpa library ikon). */
+/** Tombol bulat biru di sudut facecam; ikonnya digambar sendiri (tanpa library ikon). */
 private class ControlButton(context: Context, private val kind: Int) : View(context) {
-    private val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(170, 25, 25, 25) }
+    private val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(225, 37, 99, 235) }
     private val fg = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         color = Color.WHITE
